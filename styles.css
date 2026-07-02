@@ -443,6 +443,7 @@ dialog::backdrop {
 label {
   display: grid;
   gap: 6px;
+  min-width: 0;
   color: var(--muted);
   font-size: 13px;
 }
@@ -451,12 +452,20 @@ input,
 textarea,
 select {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 11px;
   background: #fff;
   color: var(--text);
+}
+
+input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: hidden;
 }
 
 textarea {
@@ -467,6 +476,7 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 details {
@@ -503,6 +513,7 @@ details label {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .set-grid {
@@ -602,6 +613,14 @@ details label {
   .stats-grid,
   .field-row {
     grid-template-columns: 1fr;
+  }
+
+  dialog {
+    width: calc(100vw - 20px);
+  }
+
+  .dialog-card {
+    padding: 14px;
   }
 
   .set-grid,
