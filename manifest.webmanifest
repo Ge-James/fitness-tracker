@@ -1,0 +1,17 @@
+{
+  "name": "健身追踪",
+  "short_name": "健身",
+  "description": "记录训练、身体数据和身材照片。",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f3",
+  "theme_color": "#1f6f5b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

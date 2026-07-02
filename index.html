@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1f6f5b" />
+    <title>健身追踪</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="kicker" id="todayLabel"></p>
+          <h1>健身追踪</h1>
+        </div>
+        <button class="icon-button" id="backupButton" type="button" aria-label="备份">
+          <span aria-hidden="true">↧</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="view active" id="view-home" aria-labelledby="homeTitle">
+          <h2 id="homeTitle">今日</h2>
+          <div class="quick-grid">
+            <button class="quick-action" data-open="workoutDialog" type="button">
+              <span>+</span>
+              记录训练
+            </button>
+            <button class="quick-action" data-open="bodyDialog" type="button">
+              <span>+</span>
+              身体数据
+            </button>
+            <button class="quick-action" data-open="photoDialog" type="button">
+              <span>+</span>
+              上传照片
+            </button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="metric">
+              <span>最新体重</span>
+              <strong id="latestWeight">--</strong>
+              <small id="weightDelta">暂无变化</small>
+            </article>
+            <article class="metric">
+              <span>最新腰围</span>
+              <strong id="latestWaist">--</strong>
+              <small id="waistDelta">暂无变化</small>
+            </article>
+          </div>
+
+          <section class="panel">
+            <div class="section-title">
+              <h3>最近训练</h3>
+              <button class="text-button" data-nav="workouts" type="button">查看</button>
+            </div>
+            <div id="recentWorkout" class="empty-state">还没有训练记录</div>
+          </section>
+
+          <section class="panel">
+            <div class="section-title">
+              <h3 id="homeTrendTitle">30 天趋势</h3>
+            </div>
+            <div class="range-tabs compact-tabs" role="tablist" aria-label="首页图表范围" data-chart-range="home">
+              <button class="active" data-range="30" type="button">过去30天</button>
+              <button data-range="90" type="button">3个月</button>
+              <button data-range="180" type="button">半年</button>
+              <button data-range="365" type="button">1年</button>
+              <button data-range="1825" type="button">5年</button>
+              <button data-range="all" type="button">All time</button>
+            </div>
+            <canvas id="homeChart" height="260"></canvas>
+          </section>
+        </section>
+
+        <section class="view" id="view-workouts" aria-labelledby="workoutsTitle">
+          <div class="section-title sticky-title">
+            <h2 id="workoutsTitle">训练</h2>
+            <button class="primary-button" data-open="workoutDialog" type="button">新增</button>
+          </div>
+          <div id="workoutList" class="timeline"></div>
+        </section>
+
+        <section class="view" id="view-body" aria-labelledby="bodyTitle">
+          <div class="section-title sticky-title">
+            <h2 id="bodyTitle">身体</h2>
+            <button class="primary-button" data-open="bodyDialog" type="button">新增</button>
+          </div>
+          <div class="range-tabs" role="tablist" aria-label="身体图表范围" data-chart-range="body">
+            <button class="active" data-range="30" type="button">过去30天</button>
+            <button data-range="90" type="button">3个月</button>
+            <button data-range="180" type="button">半年</button>
+            <button data-range="365" type="button">1年</button>
+            <button data-range="1825" type="button">5年</button>
+            <button data-range="all" type="button">All time</button>
+          </div>
+          <section class="panel chart-panel">
+            <canvas id="bodyChart" height="260"></canvas>
+          </section>
+          <div id="bodyList" class="timeline"></div>
+        </section>
+
+        <section class="view" id="view-photos" aria-labelledby="photosTitle">
+          <div class="section-title sticky-title">
+            <h2 id="photosTitle">照片</h2>
+            <button class="primary-button" data-open="photoDialog" type="button">上传</button>
+          </div>
+          <div id="photoGrid" class="photo-grid"></div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="主导航">
+        <button class="active" data-nav="home" type="button">首页</button>
+        <button data-nav="workouts" type="button">训练</button>
+        <button data-nav="body" type="button">身体</button>
+        <button data-nav="photos" type="button">照片</button>
+      </nav>
+    </div>
+
+    <dialog id="workoutDialog">
+      <form method="dialog" class="dialog-card" id="workoutForm">
+        <div class="dialog-head">
+          <h2 id="workoutDialogTitle">记录训练</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="workoutDialog" aria-label="关闭">×</button>
+        </div>
+        <input type="hidden" id="workoutId" />
+        <label>日期<input id="workoutDate" type="date" required /></label>
+        <label>标题<input id="workoutTitle" type="text" placeholder="例如 胸肩三头" required /></label>
+        <div class="field-row">
+          <label>时长 分钟<input id="workoutDuration" type="number" min="0" inputmode="decimal" /></label>
+          <label>强度 1-10<input id="workoutIntensity" type="number" min="1" max="10" inputmode="decimal" /></label>
+        </div>
+        <label>备注<textarea id="workoutNotes" rows="2"></textarea></label>
+        <div class="section-title compact">
+          <h3>动作</h3>
+          <button class="text-button" id="addExerciseButton" type="button">添加动作</button>
+        </div>
+        <div id="exerciseEditor" class="exercise-editor"></div>
+        <div class="dialog-actions">
+          <button class="danger-button hidden" id="deleteWorkoutButton" type="button">删除</button>
+          <button class="secondary-button" type="button" data-close="workoutDialog">取消</button>
+          <button class="primary-button" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="bodyDialog">
+      <form method="dialog" class="dialog-card" id="bodyForm">
+        <div class="dialog-head">
+          <h2 id="bodyDialogTitle">身体数据</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="bodyDialog" aria-label="关闭">×</button>
+        </div>
+        <input type="hidden" id="bodyId" />
+        <label>日期<input id="bodyDate" type="date" required /></label>
+        <div class="field-row">
+          <label>体重 kg<input id="bodyWeight" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+          <label>腰围 cm<input id="bodyWaist" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+        </div>
+        <details>
+          <summary>更多指标</summary>
+          <div class="field-row">
+            <label>胸围 cm<input id="bodyChest" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+            <label>臀围 cm<input id="bodyHips" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+          </div>
+          <div class="field-row">
+            <label>大腿围 cm<input id="bodyThigh" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+            <label>手臂围 cm<input id="bodyArm" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+          </div>
+          <label>体脂率 %<input id="bodyFat" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+        </details>
+        <label>备注<textarea id="bodyNotes" rows="2"></textarea></label>
+        <div class="dialog-actions">
+          <button class="danger-button hidden" id="deleteBodyButton" type="button">删除</button>
+          <button class="secondary-button" type="button" data-close="bodyDialog">取消</button>
+          <button class="primary-button" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="photoDialog">
+      <form method="dialog" class="dialog-card" id="photoForm">
+        <div class="dialog-head">
+          <h2>上传照片</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="photoDialog" aria-label="关闭">×</button>
+        </div>
+        <input type="hidden" id="photoId" />
+        <label>日期<input id="photoDate" type="date" required /></label>
+        <label>照片<input id="photoFile" type="file" accept="image/*" /></label>
+        <div id="photoPreview" class="photo-preview empty-state">选择照片后会显示预览</div>
+        <div class="field-row">
+          <label>角度
+            <select id="photoAngle">
+              <option value="front">正面</option>
+              <option value="side">侧面</option>
+              <option value="back">背面</option>
+              <option value="other">其他</option>
+            </select>
+          </label>
+          <label>体重 kg<input id="photoWeight" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+        </div>
+        <label>备注<textarea id="photoNotes" rows="2"></textarea></label>
+        <div class="dialog-actions">
+          <button class="danger-button hidden" id="deletePhotoButton" type="button">删除</button>
+          <button class="secondary-button" type="button" data-close="photoDialog">取消</button>
+          <button class="primary-button" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="backupDialog">
+      <form method="dialog" class="dialog-card" id="backupForm">
+        <div class="dialog-head">
+          <h2>数据备份</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="backupDialog" aria-label="关闭">×</button>
+        </div>
+        <p class="muted">第一版数据保存在当前浏览器。建议定期导出备份，换手机前也先导出。</p>
+        <button class="primary-button full" id="exportButton" type="button">导出备份</button>
+        <label>导入备份<input id="importFile" type="file" accept="application/json" /></label>
+        <button class="secondary-button full" id="importButton" type="button">导入</button>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
