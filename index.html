@@ -15,9 +15,12 @@
           <p class="kicker" id="todayLabel"></p>
           <h1>健身追踪</h1>
         </div>
-        <button class="icon-button" id="backupButton" type="button" aria-label="备份">
-          <span aria-hidden="true">↧</span>
-        </button>
+        <div class="top-actions">
+          <button class="sync-pill" id="authButton" type="button">登录</button>
+          <button class="icon-button" id="backupButton" type="button" aria-label="备份">
+            <span aria-hidden="true">↧</span>
+          </button>
+        </div>
       </header>
 
       <main>
@@ -219,9 +222,30 @@
         <button class="primary-button full" id="exportButton" type="button">导出备份</button>
         <label>导入备份<input id="importFile" type="file" accept="application/json" /></label>
         <button class="secondary-button full" id="importButton" type="button">导入</button>
+        <button class="primary-button full hidden" id="uploadCloudButton" type="button">上传本地数据到云端</button>
+        <button class="secondary-button full hidden" id="refreshCloudButton" type="button">从云端刷新</button>
       </form>
     </dialog>
 
+    <dialog id="authDialog">
+      <form method="dialog" class="dialog-card" id="authForm">
+        <div class="dialog-head">
+          <h2>账号</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="authDialog" aria-label="关闭">×</button>
+        </div>
+        <p class="muted" id="authStatus">登录后可把训练、身体数据和照片同步到云端。</p>
+        <label>邮箱<input id="authEmail" type="email" autocomplete="email" /></label>
+        <label>密码<input id="authPassword" type="password" autocomplete="current-password" /></label>
+        <div class="dialog-actions">
+          <button class="danger-button hidden" id="signOutButton" type="button">退出</button>
+          <button class="secondary-button" id="signUpButton" type="button">注册</button>
+          <button class="primary-button" id="signInButton" type="button">登录</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

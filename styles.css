@@ -55,6 +55,26 @@ button {
   border-bottom: 1px solid rgba(220, 228, 223, 0.75);
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.sync-pill {
+  min-height: 38px;
+  max-width: 138px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 h1,
 h2,
 h3,

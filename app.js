@@ -11,6 +11,9 @@ const state = {
   draftPhotoData: "",
   chartPoints: {},
   activeChartPoint: {},
+  supabase: null,
+  user: null,
+  cloudReady: false,
 };
 
 const RANGE_LABELS = {
@@ -24,6 +27,10 @@ const RANGE_LABELS = {
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+function hasCloud() {
+  return Boolean(state.supabase && state.user);
+}
 
 function uid() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -101,12 +108,218 @@ async function loadData() {
   render();
 }
 
+async function loadCloudData() {
+  if (!hasCloud()) return;
+  const [workoutsResult, bodyResult, photosResult] = await Promise.all([
+    state.supabase.from("workouts").select("*").order("date", { ascending: false }),
+    state.supabase.from("body_measurements").select("*").order("date", { ascending: false }),
+    state.supabase.from("progress_photos").select("*").order("date", { ascending: false }),
+  ]);
+  if (workoutsResult.error || bodyResult.error || photosResult.error) {
+    alert("云端数据读取失败，请检查 Supabase 表和权限规则");
+    return;
+  }
+  state.workouts = workoutsResult.data.map(fromWorkoutRow);
+  state.measurements = bodyResult.data.map(fromMeasurementRow);
+  state.photos = await Promise.all(photosResult.data.map(fromPhotoRow));
+  render();
+}
+
+function initSupabaseClient() {
+  const config = window.FITNESS_SUPABASE_CONFIG || {};
+  if (!config.url || !config.anonKey || !window.supabase) {
+    updateAuthUi();
+    return;
+  }
+  state.supabase = window.supabase.createClient(config.url, config.anonKey);
+  state.cloudReady = true;
+}
+
+async function restoreSession() {
+  if (!state.supabase) return;
+  const { data } = await state.supabase.auth.getUser();
+  state.user = data.user || null;
+  updateAuthUi();
+  if (state.user) await loadCloudData();
+}
+
+function setupAuth() {
+  $("#authButton").addEventListener("click", () => {
+    updateAuthUi();
+    $("#authDialog").showModal();
+  });
+  $("#signUpButton").addEventListener("click", async () => {
+    const email = $("#authEmail").value.trim();
+    const password = $("#authPassword").value;
+    if (!state.supabase) {
+      alert("还没有配置 Supabase。请先填写 supabase-config.js。");
+      return;
+    }
+    const { error } = await state.supabase.auth.signUp({ email, password });
+    if (error) alert(error.message);
+    else alert("注册成功。如果 Supabase 开启了邮箱确认，请先去邮箱确认。");
+    await restoreSession();
+  });
+  $("#signInButton").addEventListener("click", async () => {
+    const email = $("#authEmail").value.trim();
+    const password = $("#authPassword").value;
+    if (!state.supabase) {
+      alert("还没有配置 Supabase。请先填写 supabase-config.js。");
+      return;
+    }
+    const { data, error } = await state.supabase.auth.signInWithPassword({ email, password });
+    if (error) alert(error.message);
+    else {
+      state.user = data.user;
+      $("#authDialog").close();
+      await loadCloudData();
+    }
+    updateAuthUi();
+  });
+  $("#signOutButton").addEventListener("click", async () => {
+    if (state.supabase) await state.supabase.auth.signOut();
+    state.user = null;
+    $("#authDialog").close();
+    await loadData();
+    updateAuthUi();
+  });
+}
+
+function updateAuthUi() {
+  const label = state.user?.email || (state.cloudReady ? "登录" : "未配置");
+  $("#authButton").textContent = label;
+  $("#authStatus").textContent = state.user
+    ? `已登录：${state.user.email}`
+    : state.cloudReady
+      ? "登录后可把训练、身体数据和照片同步到云端。"
+      : "还没有配置 Supabase，当前仍是本地模式。";
+  $("#signOutButton").classList.toggle("hidden", !state.user);
+  $("#uploadCloudButton")?.classList.toggle("hidden", !state.user);
+  $("#refreshCloudButton")?.classList.toggle("hidden", !state.user);
+}
+
 function render() {
   renderHome();
   renderWorkouts();
   renderMeasurements();
   renderPhotos();
   drawCharts();
+}
+
+function toWorkoutRow(item) {
+  return {
+    id: item.id,
+    user_id: state.user.id,
+    date: item.date,
+    title: item.title,
+    duration_minutes: item.durationMinutes || null,
+    intensity: item.intensity || null,
+    notes: item.notes || null,
+    exercises: item.exercises || [],
+    created_at: item.createdAt || new Date().toISOString(),
+    updated_at: item.updatedAt || new Date().toISOString(),
+  };
+}
+
+function fromWorkoutRow(row) {
+  return {
+    id: row.id,
+    date: row.date,
+    title: row.title,
+    durationMinutes: row.duration_minutes ?? undefined,
+    intensity: row.intensity ?? undefined,
+    notes: row.notes || "",
+    exercises: row.exercises || [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toMeasurementRow(item) {
+  return {
+    id: item.id,
+    user_id: state.user.id,
+    date: item.date,
+    weight: item.weight ?? null,
+    waist: item.waist ?? null,
+    chest: item.chest ?? null,
+    hips: item.hips ?? null,
+    thigh: item.thigh ?? null,
+    arm: item.arm ?? null,
+    body_fat: item.bodyFat ?? null,
+    notes: item.notes || null,
+    created_at: item.createdAt || new Date().toISOString(),
+    updated_at: item.updatedAt || new Date().toISOString(),
+  };
+}
+
+function fromMeasurementRow(row) {
+  return {
+    id: row.id,
+    date: row.date,
+    weight: row.weight ?? undefined,
+    waist: row.waist ?? undefined,
+    chest: row.chest ?? undefined,
+    hips: row.hips ?? undefined,
+    thigh: row.thigh ?? undefined,
+    arm: row.arm ?? undefined,
+    bodyFat: row.body_fat ?? undefined,
+    notes: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function toPhotoRow(item) {
+  const imagePath = item.imagePath || await uploadPhotoToCloud(item);
+  return {
+    id: item.id,
+    user_id: state.user.id,
+    date: item.date,
+    image_path: imagePath,
+    angle: item.angle || "front",
+    weight: item.weight ?? null,
+    notes: item.notes || null,
+    created_at: item.createdAt || new Date().toISOString(),
+    updated_at: item.updatedAt || new Date().toISOString(),
+  };
+}
+
+async function fromPhotoRow(row) {
+  const { data } = await state.supabase.storage
+    .from("progress-photos")
+    .createSignedUrl(row.image_path, 60 * 60);
+  return {
+    id: row.id,
+    date: row.date,
+    imageData: data?.signedUrl || "",
+    imagePath: row.image_path,
+    angle: row.angle || "front",
+    weight: row.weight ?? undefined,
+    notes: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function uploadPhotoToCloud(item) {
+  if (!item.imageData?.startsWith("data:")) return item.imagePath;
+  const blob = dataUrlToBlob(item.imageData);
+  const path = `${state.user.id}/${item.id}.jpg`;
+  const { error } = await state.supabase.storage
+    .from("progress-photos")
+    .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+  if (error) throw error;
+  return path;
+}
+
+function dataUrlToBlob(dataUrl) {
+  const [meta, base64] = dataUrl.split(",");
+  const mime = meta.match(/data:(.*);base64/)?.[1] || "image/jpeg";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
 }
 
 function renderHome() {
@@ -712,7 +925,7 @@ async function saveWorkout(event) {
 
   const now = new Date().toISOString();
   const existing = state.workouts.find((item) => item.id === $("#workoutId").value);
-  await put("workouts", {
+  const workout = {
     id: existing?.id || uid(),
     date: $("#workoutDate").value,
     title: $("#workoutTitle").value.trim(),
@@ -722,9 +935,12 @@ async function saveWorkout(event) {
     exercises,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
-  });
+  };
+  await put("workouts", workout);
+  if (hasCloud()) await saveWorkoutCloud(workout);
   $("#workoutDialog").close();
-  await loadData();
+  if (hasCloud()) await loadCloudData();
+  else await loadData();
 }
 
 function resetBodyForm(item) {
@@ -744,8 +960,10 @@ function setupBodyForm() {
     const id = $("#bodyId").value;
     if (id && confirm("确定删除这条身体数据？")) {
       await remove("measurements", id);
+      if (hasCloud()) await state.supabase.from("body_measurements").delete().eq("id", id);
       $("#bodyDialog").close();
-      await loadData();
+      if (hasCloud()) await loadCloudData();
+      else await loadData();
     }
   });
   $$(".range-tabs button").forEach((button) => {
@@ -764,7 +982,7 @@ async function saveBody(event) {
   event.preventDefault();
   const now = new Date().toISOString();
   const existing = state.measurements.find((item) => item.id === $("#bodyId").value);
-  await put("measurements", {
+  const measurement = {
     id: existing?.id || uid(),
     date: $("#bodyDate").value,
     weight: num($("#bodyWeight").value),
@@ -777,9 +995,12 @@ async function saveBody(event) {
     notes: $("#bodyNotes").value.trim(),
     createdAt: existing?.createdAt || now,
     updatedAt: now,
-  });
+  };
+  await put("measurements", measurement);
+  if (hasCloud()) await saveMeasurementCloud(measurement);
   $("#bodyDialog").close();
-  await loadData();
+  if (hasCloud()) await loadCloudData();
+  else await loadData();
 }
 
 function resetPhotoForm(photo) {
@@ -805,9 +1026,15 @@ function setupPhotoForm() {
   $("#deletePhotoButton").addEventListener("click", async () => {
     const id = $("#photoId").value;
     if (id && confirm("确定删除这张照片？")) {
+      const photo = state.photos.find((item) => item.id === id);
       await remove("photos", id);
+      if (hasCloud()) {
+        await state.supabase.from("progress_photos").delete().eq("id", id);
+        if (photo?.imagePath) await state.supabase.storage.from("progress-photos").remove([photo.imagePath]);
+      }
       $("#photoDialog").close();
-      await loadData();
+      if (hasCloud()) await loadCloudData();
+      else await loadData();
     }
   });
 }
@@ -851,18 +1078,22 @@ async function savePhoto(event) {
   }
   const now = new Date().toISOString();
   const existing = state.photos.find((item) => item.id === $("#photoId").value);
-  await put("photos", {
+  const photo = {
     id: existing?.id || uid(),
     date: $("#photoDate").value,
     imageData: state.draftPhotoData,
+    imagePath: existing?.imagePath || "",
     angle: $("#photoAngle").value,
     weight: num($("#photoWeight").value),
     notes: $("#photoNotes").value.trim(),
     createdAt: existing?.createdAt || now,
     updatedAt: now,
-  });
+  };
+  await put("photos", photo);
+  if (hasCloud()) await savePhotoCloud(photo);
   $("#photoDialog").close();
-  await loadData();
+  if (hasCloud()) await loadCloudData();
+  else await loadData();
 }
 
 function setupEditHandlers() {
@@ -894,8 +1125,44 @@ function setupEditHandlers() {
 async function deleteWorkout(id) {
   if (id && confirm("确定删除这次训练？")) {
     await remove("workouts", id);
+    if (hasCloud()) await state.supabase.from("workouts").delete().eq("id", id);
     if ($("#workoutDialog").open) $("#workoutDialog").close();
-    await loadData();
+    if (hasCloud()) await loadCloudData();
+    else await loadData();
+  }
+}
+
+async function saveWorkoutCloud(workout) {
+  const { error } = await state.supabase.from("workouts").upsert(toWorkoutRow(workout));
+  if (error) throw error;
+}
+
+async function saveMeasurementCloud(measurement) {
+  const { error } = await state.supabase.from("body_measurements").upsert(toMeasurementRow(measurement));
+  if (error) throw error;
+}
+
+async function savePhotoCloud(photo) {
+  const row = await toPhotoRow(photo);
+  const { error } = await state.supabase.from("progress_photos").upsert(row);
+  if (error) throw error;
+}
+
+async function uploadLocalDataToCloud() {
+  if (!hasCloud()) return;
+  const [workouts, measurements, photos] = await Promise.all([
+    getAll("workouts"),
+    getAll("measurements"),
+    getAll("photos"),
+  ]);
+  try {
+    for (const workout of workouts) await saveWorkoutCloud(workout);
+    for (const measurement of measurements) await saveMeasurementCloud(measurement);
+    for (const photo of photos) await savePhotoCloud(photo);
+    alert("本地数据已上传到云端");
+    await loadCloudData();
+  } catch (error) {
+    alert(`上传失败：${error.message}`);
   }
 }
 
@@ -932,8 +1199,15 @@ function setupBackup() {
       ...payload.measurements.map((item) => put("measurements", item)),
       ...payload.photos.map((item) => put("photos", item)),
     ]);
+    if (hasCloud() && confirm("是否同时上传导入的数据到云端？")) await uploadLocalDataToCloud();
     $("#backupDialog").close();
-    await loadData();
+    if (hasCloud()) await loadCloudData();
+    else await loadData();
+  });
+  $("#uploadCloudButton").addEventListener("click", uploadLocalDataToCloud);
+  $("#refreshCloudButton").addEventListener("click", async () => {
+    await loadCloudData();
+    alert("已从云端刷新");
   });
 }
 
@@ -952,8 +1226,10 @@ function escapeAttr(value = "") {
 
 async function init() {
   state.db = await openDb();
+  initSupabaseClient();
   setupNavigation();
   setupDialogs();
+  setupAuth();
   setupWorkoutForm();
   setupBodyForm();
   setupPhotoForm();
@@ -961,6 +1237,7 @@ async function init() {
   setupBackup();
   setupChartInteractions();
   await loadData();
+  await restoreSession();
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("service-worker.js");
   }
