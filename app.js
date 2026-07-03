@@ -432,7 +432,10 @@ function renderMeasurements() {
           <strong>${formatDate(item.date)}</strong>
           <span class="timeline-meta">${item.notes ? escapeHtml(item.notes) : "身体数据"}</span>
         </div>
-        <button class="text-button" type="button" data-edit-body="${item.id}">编辑</button>
+        <div class="item-actions">
+          <button class="text-button" type="button" data-edit-body="${item.id}">编辑</button>
+          <button class="danger-link" type="button" data-delete-body="${item.id}">删除</button>
+        </div>
       </div>
       <div class="chip-row">
         ${item.weight ? `<span class="chip">体重 ${item.weight} kg</span>` : ""}
@@ -958,13 +961,7 @@ function setupBodyForm() {
   $("#bodyForm").addEventListener("submit", saveBody);
   $("#deleteBodyButton").addEventListener("click", async () => {
     const id = $("#bodyId").value;
-    if (id && confirm("确定删除这条身体数据？")) {
-      await remove("measurements", id);
-      if (hasCloud()) await state.supabase.from("body_measurements").delete().eq("id", id);
-      $("#bodyDialog").close();
-      if (hasCloud()) await loadCloudData();
-      else await loadData();
-    }
+    await deleteBodyMeasurement(id);
   });
   $$(".range-tabs button").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1099,12 +1096,18 @@ async function savePhoto(event) {
 function setupEditHandlers() {
   document.addEventListener("click", (event) => {
     const deleteWorkoutButton = event.target.closest("[data-delete-workout]");
+    const deleteBodyButton = event.target.closest("[data-delete-body]");
     const workoutButton = event.target.closest("[data-edit-workout]");
     const bodyButton = event.target.closest("[data-edit-body]");
     const photoButton = event.target.closest("[data-edit-photo]");
     if (deleteWorkoutButton) {
       event.stopPropagation();
       deleteWorkout(deleteWorkoutButton.dataset.deleteWorkout);
+      return;
+    }
+    if (deleteBodyButton) {
+      event.stopPropagation();
+      deleteBodyMeasurement(deleteBodyButton.dataset.deleteBody);
       return;
     }
     if (workoutButton) {
@@ -1127,6 +1130,16 @@ async function deleteWorkout(id) {
     await remove("workouts", id);
     if (hasCloud()) await state.supabase.from("workouts").delete().eq("id", id);
     if ($("#workoutDialog").open) $("#workoutDialog").close();
+    if (hasCloud()) await loadCloudData();
+    else await loadData();
+  }
+}
+
+async function deleteBodyMeasurement(id) {
+  if (id && confirm("确定删除这条身体数据？")) {
+    await remove("measurements", id);
+    if (hasCloud()) await state.supabase.from("body_measurements").delete().eq("id", id);
+    if ($("#bodyDialog").open) $("#bodyDialog").close();
     if (hasCloud()) await loadCloudData();
     else await loadData();
   }
