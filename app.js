@@ -960,7 +960,6 @@ function addSetEditor(card, set = {}, index) {
     <span class="set-number">${index === undefined ? $(".exercise-set-row", card).parentElement?.children.length + 1 || "" : index + 1}</span>
     <label>重量 lb<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${set.weight || ""}" /></label>
     <label>次数<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${set.reps || ""}" /></label>
-    <label>备注<input class="set-notes" type="text" value="${escapeAttr(set.notes || "")}" /></label>
     <button class="icon-button remove-set" type="button" aria-label="删除组">×</button>
   `;
   $(".exercise-sets", card).appendChild(row);
@@ -1000,8 +999,7 @@ async function saveWorkout(event) {
       id: row.dataset.setId || uid(),
       weight: num($(".set-weight", row)?.value),
       reps: num($(".set-reps", row)?.value),
-      notes: $(".set-notes", row)?.value.trim() || "",
-    })).filter((set) => set.weight || set.reps || set.notes);
+    })).filter((set) => set.weight || set.reps);
     return {
       id: card.dataset.exerciseId || uid(),
       name: $(".exercise-name", card).value.trim(),
