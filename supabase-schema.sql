@@ -69,30 +69,35 @@ alter table public.body_measurements enable row level security;
 alter table public.progress_photos enable row level security;
 alter table public.sleep_records enable row level security;
 
+drop policy if exists "workouts are owned by user" on public.workouts;
 create policy "workouts are owned by user"
 on public.workouts
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "body measurements are owned by user" on public.body_measurements;
 create policy "body measurements are owned by user"
 on public.body_measurements
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "progress photos are owned by user" on public.progress_photos;
 create policy "progress photos are owned by user"
 on public.progress_photos
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "sleep records are owned by user" on public.sleep_records;
 create policy "sleep records are owned by user"
 on public.sleep_records
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "users can upload own progress photos" on storage.objects;
 create policy "users can upload own progress photos"
 on storage.objects
 for insert
@@ -101,6 +106,7 @@ with check (
   and auth.uid()::text = (storage.foldername(name))[1]
 );
 
+drop policy if exists "users can read own progress photos" on storage.objects;
 create policy "users can read own progress photos"
 on storage.objects
 for select
@@ -109,6 +115,7 @@ using (
   and auth.uid()::text = (storage.foldername(name))[1]
 );
 
+drop policy if exists "users can update own progress photos" on storage.objects;
 create policy "users can update own progress photos"
 on storage.objects
 for update
@@ -121,6 +128,7 @@ with check (
   and auth.uid()::text = (storage.foldername(name))[1]
 );
 
+drop policy if exists "users can delete own progress photos" on storage.objects;
 create policy "users can delete own progress photos"
 on storage.objects
 for delete
