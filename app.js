@@ -421,6 +421,7 @@ function renderWorkouts() {
           </div>
           <div class="item-actions">
             <button class="text-button" type="button" data-edit-workout="${workout.id}">详情</button>
+            <button class="text-button" type="button" data-copy-workout="${workout.id}">复制</button>
             <button class="danger-link" type="button" data-delete-workout="${workout.id}">删除</button>
           </div>
         </div>
@@ -920,6 +921,32 @@ function resetWorkoutForm(workout) {
   (workout?.exercises || [newExercise()]).forEach((exercise) => addExerciseEditor(exercise, false));
 }
 
+function copyWorkout(workout) {
+  if (!workout) return;
+  const now = new Date().toISOString();
+  const source = typeof structuredClone === "function"
+    ? structuredClone(workout)
+    : JSON.parse(JSON.stringify(workout));
+  const clone = {
+    ...source,
+    id: "",
+    date: today(),
+    title: `${workout.title} 复制`,
+    createdAt: now,
+    updatedAt: now,
+    exercises: (workout.exercises || []).map((exercise) => ({
+      ...exercise,
+      id: uid(),
+      sets: (exercise.sets || []).map((set) => ({ ...set, id: uid() })),
+    })),
+  };
+  resetWorkoutForm(clone);
+  $("#workoutId").value = "";
+  $("#workoutDialogTitle").textContent = "复制训练";
+  $("#deleteWorkoutButton").classList.add("hidden");
+  $("#workoutDialog").showModal();
+}
+
 function newExercise() {
   return { id: uid(), name: "", type: "strength", sets: [{ id: uid(), weight: "", reps: "", notes: "" }], notes: "" };
 }
@@ -1293,6 +1320,7 @@ function setupEditHandlers() {
   document.addEventListener("click", (event) => {
     const deleteWorkoutButton = event.target.closest("[data-delete-workout]");
     const deleteBodyButton = event.target.closest("[data-delete-body]");
+    const copyWorkoutButton = event.target.closest("[data-copy-workout]");
     const workoutButton = event.target.closest("[data-edit-workout]");
     const bodyButton = event.target.closest("[data-edit-body]");
     const photoButton = event.target.closest("[data-edit-photo]");
@@ -1304,6 +1332,11 @@ function setupEditHandlers() {
     if (deleteBodyButton) {
       event.stopPropagation();
       deleteBodyMeasurement(deleteBodyButton.dataset.deleteBody);
+      return;
+    }
+    if (copyWorkoutButton) {
+      event.stopPropagation();
+      copyWorkout(state.workouts.find((item) => item.id === copyWorkoutButton.dataset.copyWorkout));
       return;
     }
     if (workoutButton) {
