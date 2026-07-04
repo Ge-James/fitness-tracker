@@ -954,7 +954,6 @@ details label {
   .set-grid,
   .set-grid.timed,
   .exercise-metrics,
-  .exercise-set-row,
   .template-tools {
     grid-template-columns: 1fr 1fr;
   }
@@ -968,8 +967,25 @@ details label {
     grid-template-columns: 1fr;
   }
 
+  .exercise-set-row {
+    grid-template-columns: 24px minmax(68px, 1.15fr) minmax(56px, 0.9fr) minmax(52px, 0.8fr) 34px;
+    gap: 6px;
+    align-items: end;
+  }
+
+  .exercise-set-row label {
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .exercise-set-row input {
+    min-height: 38px;
+    padding: 8px 7px;
+  }
+
   .exercise-set-row .set-number,
   .exercise-set-row .remove-set {
-    grid-column: span 1;
+    min-height: 38px;
+    width: 100%;
   }
 }
