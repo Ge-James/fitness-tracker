@@ -248,6 +248,20 @@
       </form>
     </dialog>
 
+    <dialog id="messageDialog">
+      <form method="dialog" class="dialog-card message-card">
+        <div class="dialog-head">
+          <h2 id="messageTitle">提示</h2>
+          <button class="icon-button" value="cancel" type="button" id="messageCloseButton" aria-label="关闭">×</button>
+        </div>
+        <p class="muted" id="messageBody"></p>
+        <div class="dialog-actions">
+          <button class="secondary-button hidden" id="messageCancelButton" type="button">取消</button>
+          <button class="primary-button" id="messageConfirmButton" type="button">确定</button>
+        </div>
+      </form>
+    </dialog>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="app.js"></script>

@@ -475,6 +475,14 @@ dialog::backdrop {
   box-shadow: var(--shadow);
 }
 
+.message-card {
+  gap: 16px;
+}
+
+.message-card #messageBody {
+  line-height: 1.5;
+}
+
 .dialog-head {
   display: flex;
   align-items: center;

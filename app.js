@@ -32,6 +32,55 @@ function hasCloud() {
   return Boolean(state.supabase && state.user);
 }
 
+function showMessage(message, title = "提示") {
+  return showDialogMessage({ title, message, confirmText: "知道了", showCancel: false });
+}
+
+function showConfirm(message, options = {}) {
+  return showDialogMessage({
+    title: options.title || "确认操作",
+    message,
+    confirmText: options.confirmText || "确定",
+    cancelText: options.cancelText || "取消",
+    danger: options.danger || false,
+    showCancel: true,
+  });
+}
+
+function showDialogMessage({ title, message, confirmText, cancelText, danger, showCancel }) {
+  return new Promise((resolve) => {
+    const dialog = $("#messageDialog");
+    const confirmButton = $("#messageConfirmButton");
+    const cancelButton = $("#messageCancelButton");
+    const closeButton = $("#messageCloseButton");
+    $("#messageTitle").textContent = title;
+    $("#messageBody").textContent = message;
+    confirmButton.textContent = confirmText;
+    cancelButton.textContent = cancelText || "取消";
+    cancelButton.classList.toggle("hidden", !showCancel);
+    confirmButton.classList.toggle("danger-button", danger);
+    confirmButton.classList.toggle("primary-button", !danger);
+
+    const cleanup = (value) => {
+      confirmButton.onclick = null;
+      cancelButton.onclick = null;
+      closeButton.onclick = null;
+      dialog.oncancel = null;
+      if (dialog.open) dialog.close();
+      resolve(value);
+    };
+
+    confirmButton.onclick = () => cleanup(true);
+    cancelButton.onclick = () => cleanup(false);
+    closeButton.onclick = () => cleanup(false);
+    dialog.oncancel = (event) => {
+      event.preventDefault();
+      cleanup(false);
+    };
+    dialog.showModal();
+  });
+}
+
 function uid() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -127,7 +176,7 @@ async function loadCloudData() {
     state.supabase.from("progress_photos").select("*").order("date", { ascending: false }),
   ]);
   if (workoutsResult.error || bodyResult.error || photosResult.error) {
-    alert("云端数据读取失败，请检查 Supabase 表和权限规则");
+    await showMessage("云端数据读取失败，请检查 Supabase 表和权限规则");
     return;
   }
   state.workouts = workoutsResult.data.map(fromWorkoutRow);
@@ -163,23 +212,23 @@ function setupAuth() {
     const email = $("#authEmail").value.trim();
     const password = $("#authPassword").value;
     if (!state.supabase) {
-      alert("还没有配置 Supabase。请先填写 supabase-config.js。");
+      await showMessage("还没有配置 Supabase。请先填写 supabase-config.js。");
       return;
     }
     const { error } = await state.supabase.auth.signUp({ email, password });
-    if (error) alert(error.message);
-    else alert("注册成功。如果 Supabase 开启了邮箱确认，请先去邮箱确认。");
+    if (error) await showMessage(error.message);
+    else await showMessage("注册成功。如果 Supabase 开启了邮箱确认，请先去邮箱确认。");
     await restoreSession();
   });
   $("#signInButton").addEventListener("click", async () => {
     const email = $("#authEmail").value.trim();
     const password = $("#authPassword").value;
     if (!state.supabase) {
-      alert("还没有配置 Supabase。请先填写 supabase-config.js。");
+      await showMessage("还没有配置 Supabase。请先填写 supabase-config.js。");
       return;
     }
     const { data, error } = await state.supabase.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message);
+    if (error) await showMessage(error.message);
     else {
       state.user = data.user;
       $("#authDialog").close();
@@ -1075,7 +1124,7 @@ async function saveWorkout(event) {
   }).filter((exercise) => exercise.name && exercise.sets.length);
 
   if (!exercises.length) {
-    alert("至少添加一个动作，并填写重量、次数、组数或备注");
+    await showMessage("至少添加一个动作，并填写重量、次数、组数或备注");
     return;
   }
 
@@ -1184,7 +1233,7 @@ function setupPhotoForm() {
   $("#photoForm").addEventListener("submit", savePhoto);
   $("#deletePhotoButton").addEventListener("click", async () => {
     const id = $("#photoId").value;
-    if (id && confirm("确定删除这张照片？")) {
+    if (id && await showConfirm("确定删除这张照片？", { title: "删除照片", confirmText: "删除", danger: true })) {
       const photo = state.photos.find((item) => item.id === id);
       await remove("photos", id);
       if (hasCloud()) {
@@ -1292,7 +1341,7 @@ function readAscii(view, start, length) {
 async function savePhoto(event) {
   event.preventDefault();
   if (!state.draftPhotoData) {
-    alert("请选择一张照片");
+    await showMessage("请选择一张照片");
     return;
   }
   const now = new Date().toISOString();
@@ -1355,7 +1404,7 @@ function setupEditHandlers() {
 }
 
 async function deleteWorkout(id) {
-  if (id && confirm("确定删除这次训练？")) {
+  if (id && await showConfirm("确定删除这次训练？", { title: "删除训练", confirmText: "删除", danger: true })) {
     await remove("workouts", id);
     if (hasCloud()) await state.supabase.from("workouts").delete().eq("id", id);
     if ($("#workoutDialog").open) $("#workoutDialog").close();
@@ -1365,7 +1414,7 @@ async function deleteWorkout(id) {
 }
 
 async function deleteBodyMeasurement(id) {
-  if (id && confirm("确定删除这条身体数据？")) {
+  if (id && await showConfirm("确定删除这条身体数据？", { title: "删除身体数据", confirmText: "删除", danger: true })) {
     await remove("measurements", id);
     if (hasCloud()) await state.supabase.from("body_measurements").delete().eq("id", id);
     if ($("#bodyDialog").open) $("#bodyDialog").close();
@@ -1409,10 +1458,10 @@ async function uploadLocalDataToCloud() {
     for (const workout of workouts) await saveWorkoutCloud(workout);
     for (const measurement of measurements) await saveMeasurementCloud(measurement);
     for (const photo of photos) await savePhotoCloud(photo);
-    alert("本地数据已上传到云端");
+    await showMessage("本地数据已上传到云端");
     await loadCloudData();
   } catch (error) {
-    alert(`上传失败：${error.message}`);
+    await showMessage(`上传失败：${error.message}`);
   }
 }
 
@@ -1435,21 +1484,21 @@ function setupBackup() {
   $("#importButton").addEventListener("click", async () => {
     const file = $("#importFile").files[0];
     if (!file) {
-      alert("请选择备份文件");
+      await showMessage("请选择备份文件");
       return;
     }
     const payload = JSON.parse(await file.text());
     if (!payload.workouts || !payload.measurements || !payload.photos) {
-      alert("备份文件格式不正确");
+      await showMessage("备份文件格式不正确");
       return;
     }
-    if (!confirm("导入会合并到当前数据中，继续？")) return;
+    if (!await showConfirm("导入会合并到当前数据中，继续？", { title: "导入备份" })) return;
     await Promise.all([
       ...payload.workouts.map((item) => put("workouts", item)),
       ...payload.measurements.map((item) => put("measurements", item)),
       ...payload.photos.map((item) => put("photos", item)),
     ]);
-    if (hasCloud() && confirm("是否同时上传导入的数据到云端？")) await uploadLocalDataToCloud();
+    if (hasCloud() && await showConfirm("是否同时上传导入的数据到云端？", { title: "上传到云端" })) await uploadLocalDataToCloud();
     $("#backupDialog").close();
     if (hasCloud()) await loadCloudData();
     else await loadData();
@@ -1457,7 +1506,7 @@ function setupBackup() {
   $("#uploadCloudButton").addEventListener("click", uploadLocalDataToCloud);
   $("#refreshCloudButton").addEventListener("click", async () => {
     await loadCloudData();
-    alert("已从云端刷新");
+    await showMessage("已从云端刷新");
   });
 }
 
@@ -1496,5 +1545,5 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  alert("应用启动失败，请刷新后重试");
+  showMessage("应用启动失败，请刷新后重试");
 });
