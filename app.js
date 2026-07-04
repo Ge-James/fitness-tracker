@@ -1,6 +1,7 @@
 const DB_NAME = "fitness-tracker-db";
 const DB_VERSION = 4;
 const STORES = ["workouts", "measurements", "photos", "sleep", "syncQueue", "templates"];
+const HIDDEN_EXERCISES_KEY = "fitness.hiddenExercises";
 const state = {
   db: null,
   workouts: [],
@@ -21,6 +22,7 @@ const state = {
   pendingSyncCount: 0,
   syncInProgress: false,
   scrollLockY: 0,
+  hiddenExerciseNames: new Set(),
 };
 
 const RANGE_LABELS = {
@@ -501,6 +503,7 @@ function getExerciseLibrary() {
       const name = exercise.name?.trim();
       if (!name) return;
       const key = name.toLocaleLowerCase();
+      if (state.hiddenExerciseNames.has(key)) return;
       const existing = library.get(key);
       const updatedAt = workout.updatedAt || workout.createdAt || workout.date || "";
       if (!existing || updatedAt > existing.updatedAt) {
@@ -513,6 +516,32 @@ function getExerciseLibrary() {
     });
   });
   return Array.from(library.values()).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+}
+
+function loadHiddenExercises() {
+  try {
+    const names = JSON.parse(localStorage.getItem(HIDDEN_EXERCISES_KEY) || "[]");
+    state.hiddenExerciseNames = new Set(names.map((name) => String(name).trim().toLocaleLowerCase()).filter(Boolean));
+  } catch {
+    state.hiddenExerciseNames = new Set();
+  }
+}
+
+function saveHiddenExercises() {
+  localStorage.setItem(HIDDEN_EXERCISES_KEY, JSON.stringify(Array.from(state.hiddenExerciseNames)));
+}
+
+async function hideExerciseTemplate(name, input) {
+  const cleanName = String(name || "").trim();
+  if (!cleanName) return;
+  if (!await showConfirm(`从动作库隐藏「${cleanName}」？历史训练记录不会删除。`, {
+    title: "删除动作模板",
+    confirmText: "隐藏",
+    danger: true,
+  })) return;
+  state.hiddenExerciseNames.add(cleanName.toLocaleLowerCase());
+  saveHiddenExercises();
+  renderExerciseSuggestions(input);
 }
 
 function applyExerciseSuggestion(input, exercise) {
@@ -540,10 +569,13 @@ function renderExerciseSuggestions(input) {
     return;
   }
   panel.innerHTML = suggestions.map((exercise) => `
-    <button class="exercise-suggestion" type="button" data-exercise-name="${escapeAttr(exercise.name)}">
-      <span>${escapeHtml(exercise.name)}</span>
-      <small>${exercise.type === "cardio" ? "有氧" : exercise.type === "other" ? "其他" : "重量次数"}</small>
-    </button>
+    <div class="exercise-suggestion-row">
+      <button class="exercise-suggestion" type="button" data-exercise-name="${escapeAttr(exercise.name)}">
+        <span>${escapeHtml(exercise.name)}</span>
+        <small>${exercise.type === "cardio" ? "有氧" : exercise.type === "other" ? "其他" : "重量次数"}</small>
+      </button>
+      <button class="exercise-suggestion-delete" type="button" data-exercise-name="${escapeAttr(exercise.name)}" aria-label="删除动作模板 ${escapeAttr(exercise.name)}">×</button>
+    </div>
   `).join("");
   panel.classList.remove("hidden");
 }
@@ -1742,6 +1774,13 @@ function setupWorkoutForm() {
   $("#saveTemplateButton").addEventListener("click", saveWorkoutTemplate);
   $("#useTemplateButton").addEventListener("click", useWorkoutTemplate);
   $("#exerciseEditor").addEventListener("click", (event) => {
+    const deleteSuggestion = event.target.closest(".exercise-suggestion-delete");
+    if (deleteSuggestion) {
+      const card = deleteSuggestion.closest(".exercise-card");
+      const input = $(".exercise-name", card);
+      hideExerciseTemplate(deleteSuggestion.dataset.exerciseName, input);
+      return;
+    }
     const suggestion = event.target.closest(".exercise-suggestion");
     if (suggestion) {
       const card = suggestion.closest(".exercise-card");
@@ -2318,6 +2357,7 @@ function escapeAttr(value = "") {
 
 async function init() {
   state.db = await openDb();
+  loadHiddenExercises();
   initSupabaseClient();
   setupNavigation();
   setupDialogs();

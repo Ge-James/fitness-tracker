@@ -866,6 +866,13 @@ details label {
   box-shadow: 0 12px 28px rgba(22, 34, 29, 0.16);
 }
 
+.exercise-suggestion-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  gap: 4px;
+  align-items: stretch;
+}
+
 .exercise-suggestion {
   display: flex;
   align-items: center;
@@ -880,14 +887,32 @@ details label {
   text-align: left;
 }
 
+.exercise-suggestion-delete {
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
 .exercise-suggestion small {
   color: var(--muted);
   white-space: nowrap;
 }
 
 .exercise-suggestion:hover,
-.exercise-suggestion:focus {
+.exercise-suggestion:focus,
+.exercise-suggestion-delete:hover,
+.exercise-suggestion-delete:focus {
   background: var(--surface-2);
+}
+
+.exercise-suggestion-delete:hover,
+.exercise-suggestion-delete:focus {
+  color: #a33a2e;
 }
 
 .exercise-metrics {
