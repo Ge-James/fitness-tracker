@@ -404,6 +404,7 @@ function updateAuthUi() {
 function render() {
   renderHome();
   renderWorkouts();
+  renderTemplates();
   renderMeasurements();
   renderPhotos();
   renderTemplateOptions();
@@ -701,6 +702,37 @@ function renderWorkouts() {
         </div>
         <div class="chip-row">
           ${workout.exercises.slice(0, 4).map((item) => `<span class="chip">${escapeHtml(formatExerciseSummary(item))}</span>`).join("")}
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderTemplates() {
+  const list = $("#templateList");
+  if (!list) return;
+  $("#templateCount").textContent = `${state.templates.length} 个模板`;
+  if (!state.templates.length) {
+    list.innerHTML = `<div class="empty-state compact-empty">还没有模板。保存一次训练模板后会显示在这里。</div>`;
+    return;
+  }
+  list.innerHTML = state.templates.map((template) => {
+    const exercises = template.exercises || [];
+    const setCount = exercises.reduce((sum, item) => sum + (item.setCount || item.sets?.length || 0), 0);
+    return `
+      <article class="template-item">
+        <div class="timeline-title">
+          <div>
+            <strong>${escapeHtml(template.title)}</strong>
+            <span class="timeline-meta">${exercises.length} 个动作 · ${setCount} 组</span>
+          </div>
+          <div class="item-actions">
+            <button class="text-button" type="button" data-use-template="${template.id}">使用</button>
+            <button class="danger-link" type="button" data-delete-template="${template.id}">删除</button>
+          </div>
+        </div>
+        <div class="chip-row">
+          ${exercises.slice(0, 4).map((item) => `<span class="chip">${escapeHtml(formatExerciseSummary(item))}</span>`).join("")}
         </div>
       </article>
     `;
@@ -1255,6 +1287,10 @@ async function saveWorkoutTemplate() {
 
 async function useWorkoutTemplate() {
   const template = state.templates.find((item) => item.id === $("#templateSelect").value);
+  await openWorkoutFromTemplate(template);
+}
+
+async function openWorkoutFromTemplate(template) {
   if (!template) {
     await showMessage("请先选择一个模板");
     return;
@@ -1271,6 +1307,15 @@ async function useWorkoutTemplate() {
   $("#workoutId").value = "";
   $("#workoutDialogTitle").textContent = "从模板记录";
   $("#deleteWorkoutButton").classList.add("hidden");
+  if (!$("#workoutDialog").open) $("#workoutDialog").showModal();
+}
+
+async function deleteWorkoutTemplate(id) {
+  const template = state.templates.find((item) => item.id === id);
+  if (!template) return;
+  if (!await showConfirm(`确定删除模板「${template.title}」？`, { title: "删除模板", confirmText: "删除", danger: true })) return;
+  await remove("templates", id);
+  await loadData();
 }
 
 function copyWorkout(workout) {
@@ -1672,6 +1717,8 @@ function setupEditHandlers() {
     const deleteWorkoutButton = event.target.closest("[data-delete-workout]");
     const deleteBodyButton = event.target.closest("[data-delete-body]");
     const copyWorkoutButton = event.target.closest("[data-copy-workout]");
+    const useTemplateButton = event.target.closest("[data-use-template]");
+    const deleteTemplateButton = event.target.closest("[data-delete-template]");
     const workoutButton = event.target.closest("[data-edit-workout]");
     const bodyButton = event.target.closest("[data-edit-body]");
     const photoButton = event.target.closest("[data-edit-photo]");
@@ -1688,6 +1735,16 @@ function setupEditHandlers() {
     if (copyWorkoutButton) {
       event.stopPropagation();
       copyWorkout(state.workouts.find((item) => item.id === copyWorkoutButton.dataset.copyWorkout));
+      return;
+    }
+    if (useTemplateButton) {
+      event.stopPropagation();
+      openWorkoutFromTemplate(state.templates.find((item) => item.id === useTemplateButton.dataset.useTemplate));
+      return;
+    }
+    if (deleteTemplateButton) {
+      event.stopPropagation();
+      deleteWorkoutTemplate(deleteTemplateButton.dataset.deleteTemplate);
       return;
     }
     if (workoutButton) {

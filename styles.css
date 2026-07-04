@@ -310,8 +310,24 @@ canvas {
   gap: 12px;
 }
 
+.template-panel {
+  margin-bottom: 14px;
+}
+
+.template-list {
+  display: grid;
+  gap: 10px;
+}
+
 .timeline-item {
   padding: 14px;
+}
+
+.template-item {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
 }
 
 .clickable-item {
@@ -367,6 +383,11 @@ canvas {
   border-radius: 8px;
   color: var(--muted);
   text-align: center;
+}
+
+.compact-empty {
+  padding: 12px;
+  text-align: left;
 }
 
 .range-tabs {
