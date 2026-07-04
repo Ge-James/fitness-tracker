@@ -417,6 +417,17 @@ canvas {
   margin-bottom: 14px;
 }
 
+.search-field {
+  display: block;
+  margin: 10px 0 12px;
+}
+
+.search-field input {
+  min-height: 42px;
+  border-color: rgba(201, 213, 206, 0.85);
+  background: #fff;
+}
+
 .section-actions {
   display: inline-flex;
   align-items: center;

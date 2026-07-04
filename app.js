@@ -11,6 +11,7 @@ const state = {
   sleepEntries: [],
   homeRange: "30",
   bodyRange: "30",
+  workoutSearch: "",
   draftPhotoData: "",
   chartPoints: {},
   activeChartPoint: {},
@@ -898,7 +899,13 @@ function renderWorkouts() {
     list.innerHTML = `<div class="empty-state">先记录一次训练，后面就能看到历史</div>`;
     return;
   }
-  list.innerHTML = state.workouts.map((workout) => {
+  const query = state.workoutSearch.trim().toLocaleLowerCase();
+  const workouts = query ? state.workouts.filter((workout) => matchesWorkoutSearch(workout, query)) : state.workouts;
+  if (!workouts.length) {
+    list.innerHTML = `<div class="empty-state">没有找到匹配的训练</div>`;
+    return;
+  }
+  list.innerHTML = workouts.map((workout) => {
     const setCount = workout.exercises.reduce((sum, item) => sum + (item.setCount || item.sets.length), 0);
     return `
       <article class="timeline-item clickable-item" data-edit-workout="${workout.id}" role="button" tabindex="0">
@@ -926,6 +933,21 @@ function renderWorkouts() {
       </article>
     `;
   }).join("");
+}
+
+function matchesWorkoutSearch(workout, query) {
+  const text = [
+    workout.title,
+    workout.notes,
+    formatDate(workout.date),
+    workout.date,
+    ...(workout.exercises || []).flatMap((exercise) => [
+      exercise.name,
+      exercise.notes,
+      formatExerciseSummary(exercise),
+    ]),
+  ].filter(Boolean).join(" ").toLocaleLowerCase();
+  return text.includes(query);
 }
 
 function renderTemplates() {
@@ -1888,6 +1910,10 @@ function refreshSetNumbers(card) {
 }
 
 function setupWorkoutForm() {
+  $("#workoutSearch")?.addEventListener("input", (event) => {
+    state.workoutSearch = event.target.value;
+    renderWorkouts();
+  });
   $("#addExerciseButton").addEventListener("click", () => addExerciseEditor());
   $("#saveTemplateButton").addEventListener("click", saveWorkoutTemplate);
   $("#useTemplateButton").addEventListener("click", useWorkoutTemplate);
