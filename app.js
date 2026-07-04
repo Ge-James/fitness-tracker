@@ -405,6 +405,7 @@ function render() {
   renderHome();
   renderWorkouts();
   renderTemplates();
+  renderExerciseHistoryList();
   renderMeasurements();
   renderPhotos();
   renderTemplateOptions();
@@ -737,6 +738,128 @@ function renderTemplates() {
       </article>
     `;
   }).join("");
+}
+
+function getExerciseHistory() {
+  const map = new Map();
+  state.workouts.forEach((workout) => {
+    (workout.exercises || []).forEach((exercise) => {
+      const name = exercise.name?.trim();
+      if (!name) return;
+      const key = name.toLocaleLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          name,
+          records: [],
+          totalSets: 0,
+          bestWeight: 0,
+          bestReps: 0,
+          bestOneRepMax: 0,
+        });
+      }
+      const item = map.get(key);
+      const sets = exercise.sets || [];
+      const bestSet = sets.reduce((best, set) => {
+        const weight = Number(set.weight) || 0;
+        const reps = Number(set.reps) || 0;
+        const oneRepMax = estimateOneRepMax(weight, reps);
+        if (oneRepMax > (best.oneRepMax || 0)) return { weight, reps, oneRepMax };
+        return best;
+      }, {});
+      item.totalSets += sets.length;
+      item.bestWeight = Math.max(item.bestWeight, ...sets.map((set) => Number(set.weight) || 0));
+      item.bestReps = Math.max(item.bestReps, ...sets.map((set) => Number(set.reps) || 0));
+      item.bestOneRepMax = Math.max(item.bestOneRepMax, bestSet.oneRepMax || 0);
+      item.records.push({
+        workoutId: workout.id,
+        workoutTitle: workout.title,
+        date: workout.date,
+        notes: exercise.notes || "",
+        sets,
+        bestSet,
+      });
+    });
+  });
+  return Array.from(map.values())
+    .map((item) => ({
+      ...item,
+      records: item.records.sort((a, b) => b.date.localeCompare(a.date)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+}
+
+function estimateOneRepMax(weight, reps) {
+  if (!weight || !reps) return 0;
+  return Math.round(weight * (1 + reps / 30) * 10) / 10;
+}
+
+function renderExerciseHistoryList() {
+  const list = $("#exerciseHistoryList");
+  if (!list) return;
+  const history = getExerciseHistory();
+  $("#exerciseHistoryCount").textContent = `${history.length} 个动作`;
+  if (!history.length) {
+    list.innerHTML = `<div class="empty-state compact-empty">记录训练后，这里会自动整理动作历史。</div>`;
+    return;
+  }
+  list.innerHTML = history.map((item) => `
+    <button class="history-action" type="button" data-exercise-history="${escapeAttr(item.name)}">
+      <span>
+        <strong>${escapeHtml(item.name)}</strong>
+        <small>${item.records.length} 次训练 · ${item.totalSets} 组</small>
+      </span>
+      <span class="history-action-stat">${item.bestWeight ? `${item.bestWeight} lb` : `${item.bestReps || 0} 次`}</span>
+    </button>
+  `).join("");
+}
+
+function openExerciseHistory(name) {
+  const item = getExerciseHistory().find((exercise) => exercise.name === name);
+  if (!item) return;
+  $("#exerciseHistoryTitle").textContent = item.name;
+  $("#exerciseHistoryStats").innerHTML = `
+    <article>
+      <span>训练次数</span>
+      <strong>${item.records.length}</strong>
+    </article>
+    <article>
+      <span>最高重量</span>
+      <strong>${item.bestWeight ? `${item.bestWeight} lb` : "--"}</strong>
+    </article>
+    <article>
+      <span>估算 1RM</span>
+      <strong>${item.bestOneRepMax ? `${item.bestOneRepMax} lb` : "--"}</strong>
+    </article>
+  `;
+  $("#exerciseHistoryRecords").innerHTML = item.records.slice(0, 12).map((record) => `
+    <article class="history-record">
+      <div class="timeline-title">
+        <div>
+          <strong>${formatDate(record.date)}</strong>
+          <span class="timeline-meta">${escapeHtml(record.workoutTitle || "训练")}</span>
+        </div>
+        ${record.bestSet?.weight ? `<span class="chip">${record.bestSet.weight} lb × ${record.bestSet.reps || 0}</span>` : ""}
+      </div>
+      <div class="chip-row">
+        ${formatSetGroups(record.sets).map((label) => `<span class="chip">${escapeHtml(label)}</span>`).join("")}
+      </div>
+      ${record.notes ? `<p class="muted">${escapeHtml(record.notes)}</p>` : ""}
+    </article>
+  `).join("");
+  $("#exerciseHistoryDialog").showModal();
+}
+
+function formatSetGroups(sets = []) {
+  const groups = [];
+  sets.forEach((set) => {
+    const weight = Number(set.weight) || 0;
+    const reps = Number(set.reps) || 0;
+    const label = weight ? `${weight} lb × ${reps || 0}` : `${reps || 0} 次`;
+    const last = groups[groups.length - 1];
+    if (last?.label === label) last.count += 1;
+    else groups.push({ label, count: 1 });
+  });
+  return groups.map((group) => `${group.label} × ${group.count} 组`);
 }
 
 function formatExerciseSummary(exercise) {
@@ -1719,6 +1842,7 @@ function setupEditHandlers() {
     const copyWorkoutButton = event.target.closest("[data-copy-workout]");
     const useTemplateButton = event.target.closest("[data-use-template]");
     const deleteTemplateButton = event.target.closest("[data-delete-template]");
+    const exerciseHistoryButton = event.target.closest("[data-exercise-history]");
     const workoutButton = event.target.closest("[data-edit-workout]");
     const bodyButton = event.target.closest("[data-edit-body]");
     const photoButton = event.target.closest("[data-edit-photo]");
@@ -1745,6 +1869,11 @@ function setupEditHandlers() {
     if (deleteTemplateButton) {
       event.stopPropagation();
       deleteWorkoutTemplate(deleteTemplateButton.dataset.deleteTemplate);
+      return;
+    }
+    if (exerciseHistoryButton) {
+      event.stopPropagation();
+      openExerciseHistory(exerciseHistoryButton.dataset.exerciseHistory);
       return;
     }
     if (workoutButton) {

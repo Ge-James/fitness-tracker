@@ -91,6 +91,13 @@
             </div>
             <div id="templateList" class="template-list"></div>
           </section>
+          <section class="panel history-panel">
+            <div class="section-title compact">
+              <h3>动作历史</h3>
+              <span class="timeline-meta" id="exerciseHistoryCount">0 个动作</span>
+            </div>
+            <div id="exerciseHistoryList" class="exercise-history-list"></div>
+          </section>
           <div id="workoutList" class="timeline"></div>
         </section>
 
@@ -161,6 +168,17 @@
           <button class="primary-button" type="submit">保存</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="exerciseHistoryDialog">
+      <div class="dialog-card">
+        <div class="dialog-head">
+          <h2 id="exerciseHistoryTitle">动作历史</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="exerciseHistoryDialog" aria-label="关闭">×</button>
+        </div>
+        <div class="history-stats" id="exerciseHistoryStats"></div>
+        <div class="history-records" id="exerciseHistoryRecords"></div>
+      </div>
     </dialog>
 
     <dialog id="bodyDialog">
