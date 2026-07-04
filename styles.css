@@ -1049,10 +1049,43 @@ details label {
     font-size: 19px;
   }
 
-  .stats-grid,
   .field-row,
   .checkbox-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .metric {
+    min-width: 0;
+    padding: 9px 7px;
+  }
+
+  .metric span {
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .metric strong {
+    margin: 4px 0 2px;
+    font-size: 19px;
+    line-height: 1.05;
+    white-space: nowrap;
+  }
+
+  .metric small {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   dialog {
