@@ -1128,6 +1128,12 @@ details label {
     padding: 8px 7px;
   }
 
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
   .exercise-set-row .set-number,
   .exercise-set-row .remove-set {
     min-height: 38px;

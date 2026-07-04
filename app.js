@@ -1696,7 +1696,7 @@ function addSetEditor(card, set = {}, index) {
     <span class="set-number">${index === undefined ? $(".exercise-set-row", card).parentElement?.children.length + 1 || "" : index + 1}</span>
     <label>重量 lb<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${values.weight || ""}" /></label>
     <label>次数<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${values.reps || ""}" /></label>
-    <label>组数<input class="set-count" type="number" step="1" min="1" inputmode="numeric" value="${values.count || 1}" /></label>
+    <label>组数<input class="set-count" type="number" step="1" min="1" inputmode="numeric" value="${values.count || ""}" /></label>
     <button class="icon-button remove-set" type="button" aria-label="删除组">×</button>
   `;
   $(".exercise-sets", card).appendChild(row);
@@ -1727,7 +1727,7 @@ function getLastSetValues(card) {
   return {
     weight: $(".set-weight", last)?.value || "",
     reps: $(".set-reps", last)?.value || "",
-    count: $(".set-count", last)?.value || 1,
+    count: $(".set-count", last)?.value || "",
   };
 }
 
