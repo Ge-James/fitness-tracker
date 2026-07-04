@@ -318,6 +318,14 @@ main {
   font-size: 13px;
 }
 
+.metric .metric-title {
+  display: inline-flex;
+  max-width: 100%;
+  gap: 3px;
+  align-items: center;
+  white-space: nowrap;
+}
+
 .metric strong {
   display: block;
   margin: 7px 0 4px;

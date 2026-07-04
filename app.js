@@ -851,8 +851,8 @@ function renderHome() {
   const latest = state.measurements[0];
   const previous = state.measurements[1];
   const latestDate = latest?.date ? formatShortDate(latest.date) : "";
-  $("#weightMetricLabel").textContent = latestDate ? `体重 - ${latestDate}` : "体重";
-  $("#waistMetricLabel").textContent = latestDate ? `腰围 - ${latestDate}` : "腰围";
+  $("#weightMetricDate").textContent = latestDate ? `- ${latestDate}` : "";
+  $("#waistMetricDate").textContent = latestDate ? `- ${latestDate}` : "";
   $("#latestWeight").textContent = latest?.weight ? `${latest.weight} kg` : "--";
   $("#latestWaist").textContent = latest?.waist ? `${latest.waist} cm` : "--";
   $("#weightDelta").textContent = deltaText(latest?.weight, previous?.weight, "kg");
