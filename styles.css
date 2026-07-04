@@ -417,6 +417,13 @@ canvas {
   margin-bottom: 14px;
 }
 
+.section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 .template-list {
   display: grid;
   gap: 10px;
@@ -468,6 +475,45 @@ canvas {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+}
+
+.library-manager {
+  display: grid;
+  gap: 16px;
+}
+
+.library-list {
+  display: grid;
+  gap: 8px;
+}
+
+.library-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.library-item span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.library-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-item small {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .clickable-item {

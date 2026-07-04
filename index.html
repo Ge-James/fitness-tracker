@@ -103,7 +103,10 @@
           <section class="panel history-panel">
             <div class="section-title compact">
               <h3>动作历史</h3>
-              <span class="timeline-meta" id="exerciseHistoryCount">0 个动作</span>
+              <div class="section-actions">
+                <span class="timeline-meta" id="exerciseHistoryCount">0 个动作</span>
+                <button class="text-button" id="manageExercisesButton" type="button">管理</button>
+              </div>
             </div>
             <div id="exerciseHistoryList" class="exercise-history-list"></div>
           </section>
@@ -196,6 +199,31 @@
         </div>
         <div class="history-stats" id="exerciseHistoryStats"></div>
         <div class="history-records" id="exerciseHistoryRecords"></div>
+      </div>
+    </dialog>
+
+    <dialog id="exerciseLibraryDialog">
+      <div class="dialog-card">
+        <div class="dialog-head">
+          <h2>动作库管理</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="exerciseLibraryDialog" aria-label="关闭">×</button>
+        </div>
+        <div class="library-manager">
+          <section>
+            <div class="section-title compact">
+              <h3>显示中</h3>
+              <span class="timeline-meta" id="visibleExerciseCount">0 个动作</span>
+            </div>
+            <div class="library-list" id="visibleExerciseList"></div>
+          </section>
+          <section>
+            <div class="section-title compact">
+              <h3>已隐藏</h3>
+              <span class="timeline-meta" id="hiddenExerciseCount">0 个动作</span>
+            </div>
+            <div class="library-list" id="hiddenExerciseList"></div>
+          </section>
+        </div>
       </div>
     </dialog>
 

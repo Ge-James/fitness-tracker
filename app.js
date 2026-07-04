@@ -489,6 +489,7 @@ function render() {
   renderWorkouts();
   renderTemplates();
   renderExerciseHistoryList();
+  renderExerciseLibraryManager();
   renderMeasurements();
   renderPhotos();
   renderSleep();
@@ -496,25 +497,42 @@ function render() {
   drawCharts();
 }
 
-function getExerciseLibrary() {
+function getExerciseLibrary(options = {}) {
+  const includeHidden = Boolean(options.includeHidden);
   const library = new Map();
   state.workouts.forEach((workout) => {
     (workout.exercises || []).forEach((exercise) => {
       const name = exercise.name?.trim();
       if (!name) return;
       const key = name.toLocaleLowerCase();
-      if (state.hiddenExerciseNames.has(key)) return;
+      const hidden = state.hiddenExerciseNames.has(key);
+      if (hidden && !includeHidden) return;
       const existing = library.get(key);
       const updatedAt = workout.updatedAt || workout.createdAt || workout.date || "";
       if (!existing || updatedAt > existing.updatedAt) {
         library.set(key, {
           name,
+          key,
           type: exercise.type === "timed" ? "cardio" : exercise.type || "strength",
           updatedAt,
+          hidden,
         });
       }
     });
   });
+  if (includeHidden) {
+    state.hiddenExerciseNames.forEach((key) => {
+      if (!library.has(key)) {
+        library.set(key, {
+          name: key,
+          key,
+          type: "strength",
+          updatedAt: "",
+          hidden: true,
+        });
+      }
+    });
+  }
   return Array.from(library.values()).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
 }
 
@@ -541,7 +559,50 @@ async function hideExerciseTemplate(name, input) {
   })) return;
   state.hiddenExerciseNames.add(cleanName.toLocaleLowerCase());
   saveHiddenExercises();
-  renderExerciseSuggestions(input);
+  if (input) renderExerciseSuggestions(input);
+  renderExerciseLibraryManager();
+  renderExerciseHistoryList();
+}
+
+function restoreExerciseTemplate(name) {
+  const cleanName = String(name || "").trim().toLocaleLowerCase();
+  if (!cleanName) return;
+  state.hiddenExerciseNames.delete(cleanName);
+  saveHiddenExercises();
+  renderExerciseLibraryManager();
+  renderExerciseHistoryList();
+}
+
+function renderExerciseLibraryManager() {
+  const visibleList = $("#visibleExerciseList");
+  const hiddenList = $("#hiddenExerciseList");
+  if (!visibleList || !hiddenList) return;
+  const exercises = getExerciseLibrary({ includeHidden: true });
+  const visible = exercises.filter((exercise) => !exercise.hidden);
+  const hidden = exercises.filter((exercise) => exercise.hidden);
+  $("#visibleExerciseCount").textContent = `${visible.length} 个动作`;
+  $("#hiddenExerciseCount").textContent = `${hidden.length} 个动作`;
+  visibleList.innerHTML = visible.length
+    ? visible.map((exercise) => renderLibraryItem(exercise, "hide")).join("")
+    : `<div class="empty-state compact-empty">还没有可显示的动作。</div>`;
+  hiddenList.innerHTML = hidden.length
+    ? hidden.map((exercise) => renderLibraryItem(exercise, "restore")).join("")
+    : `<div class="empty-state compact-empty">没有隐藏的动作。</div>`;
+}
+
+function renderLibraryItem(exercise, action) {
+  const typeLabel = exercise.type === "cardio" ? "有氧" : exercise.type === "other" ? "其他" : "重量次数";
+  const actionLabel = action === "restore" ? "恢复" : "隐藏";
+  const actionClass = action === "restore" ? "text-button" : "danger-link";
+  return `
+    <article class="library-item">
+      <span>
+        <strong>${escapeHtml(exercise.name)}</strong>
+        <small>${typeLabel}</small>
+      </span>
+      <button class="${actionClass}" type="button" data-library-${action}="${escapeAttr(exercise.name)}">${actionLabel}</button>
+    </article>
+  `;
 }
 
 function applyExerciseSuggestion(input, exercise) {
@@ -1773,6 +1834,19 @@ function setupWorkoutForm() {
   $("#addExerciseButton").addEventListener("click", () => addExerciseEditor());
   $("#saveTemplateButton").addEventListener("click", saveWorkoutTemplate);
   $("#useTemplateButton").addEventListener("click", useWorkoutTemplate);
+  $("#manageExercisesButton")?.addEventListener("click", () => {
+    renderExerciseLibraryManager();
+    openModal($("#exerciseLibraryDialog"));
+  });
+  $("#exerciseLibraryDialog")?.addEventListener("click", (event) => {
+    const restoreButton = event.target.closest("[data-library-restore]");
+    if (restoreButton) {
+      restoreExerciseTemplate(restoreButton.dataset.libraryRestore);
+      return;
+    }
+    const hideButton = event.target.closest("[data-library-hide]");
+    if (hideButton) hideExerciseTemplate(hideButton.dataset.libraryHide);
+  });
   $("#exerciseEditor").addEventListener("click", (event) => {
     const deleteSuggestion = event.target.closest(".exercise-suggestion-delete");
     if (deleteSuggestion) {
