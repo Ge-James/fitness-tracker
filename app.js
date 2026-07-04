@@ -14,6 +14,8 @@ const state = {
   supabase: null,
   user: null,
   cloudReady: false,
+  syncStatus: "local",
+  syncMessage: "本地模式",
 };
 
 const RANGE_LABELS = {
@@ -30,6 +32,25 @@ const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selec
 
 function hasCloud() {
   return Boolean(state.supabase && state.user);
+}
+
+function setSyncStatus(status, message) {
+  state.syncStatus = status;
+  state.syncMessage = message;
+  updateSyncStatusUi();
+}
+
+function updateSyncStatusUi() {
+  const target = $("#syncStatus");
+  if (!target) return;
+  target.textContent = state.syncMessage;
+  target.className = `sync-status ${state.syncStatus}`;
+}
+
+function markSyncReady() {
+  if (state.user) setSyncStatus("synced", "已同步");
+  else if (state.cloudReady) setSyncStatus("local", "未登录");
+  else setSyncStatus("local", "本地模式");
 }
 
 function showMessage(message, title = "提示") {
@@ -169,13 +190,18 @@ async function loadData() {
 }
 
 async function loadCloudData() {
-  if (!hasCloud()) return;
+  if (!hasCloud()) {
+    markSyncReady();
+    return;
+  }
+  setSyncStatus("syncing", "正在同步");
   const [workoutsResult, bodyResult, photosResult] = await Promise.all([
     state.supabase.from("workouts").select("*").order("date", { ascending: false }),
     state.supabase.from("body_measurements").select("*").order("date", { ascending: false }),
     state.supabase.from("progress_photos").select("*").order("date", { ascending: false }),
   ]);
   if (workoutsResult.error || bodyResult.error || photosResult.error) {
+    setSyncStatus("error", "同步失败");
     await showMessage("云端数据读取失败，请检查 Supabase 表和权限规则");
     return;
   }
@@ -183,6 +209,7 @@ async function loadCloudData() {
   state.measurements = bodyResult.data.map(fromMeasurementRow);
   state.photos = await Promise.all(photosResult.data.map(fromPhotoRow));
   render();
+  setSyncStatus("synced", "已同步");
 }
 
 function initSupabaseClient() {
@@ -256,6 +283,7 @@ function updateAuthUi() {
   $("#signOutButton").classList.toggle("hidden", !state.user);
   $("#uploadCloudButton")?.classList.toggle("hidden", !state.user);
   $("#refreshCloudButton")?.classList.toggle("hidden", !state.user);
+  markSyncReady();
 }
 
 function render() {
@@ -1237,8 +1265,19 @@ function setupPhotoForm() {
       const photo = state.photos.find((item) => item.id === id);
       await remove("photos", id);
       if (hasCloud()) {
-        await state.supabase.from("progress_photos").delete().eq("id", id);
-        if (photo?.imagePath) await state.supabase.storage.from("progress-photos").remove([photo.imagePath]);
+        setSyncStatus("syncing", "正在同步");
+        const result = await state.supabase.from("progress_photos").delete().eq("id", id);
+        if (result.error) {
+          setSyncStatus("error", "同步失败");
+          throw result.error;
+        }
+        if (photo?.imagePath) {
+          const storageResult = await state.supabase.storage.from("progress-photos").remove([photo.imagePath]);
+          if (storageResult.error) {
+            setSyncStatus("error", "同步失败");
+            throw storageResult.error;
+          }
+        }
       }
       $("#photoDialog").close();
       if (hasCloud()) await loadCloudData();
@@ -1406,7 +1445,14 @@ function setupEditHandlers() {
 async function deleteWorkout(id) {
   if (id && await showConfirm("确定删除这次训练？", { title: "删除训练", confirmText: "删除", danger: true })) {
     await remove("workouts", id);
-    if (hasCloud()) await state.supabase.from("workouts").delete().eq("id", id);
+    if (hasCloud()) {
+      setSyncStatus("syncing", "正在同步");
+      const result = await state.supabase.from("workouts").delete().eq("id", id);
+      if (result.error) {
+        setSyncStatus("error", "同步失败");
+        throw result.error;
+      }
+    }
     if ($("#workoutDialog").open) $("#workoutDialog").close();
     if (hasCloud()) await loadCloudData();
     else await loadData();
@@ -1416,7 +1462,14 @@ async function deleteWorkout(id) {
 async function deleteBodyMeasurement(id) {
   if (id && await showConfirm("确定删除这条身体数据？", { title: "删除身体数据", confirmText: "删除", danger: true })) {
     await remove("measurements", id);
-    if (hasCloud()) await state.supabase.from("body_measurements").delete().eq("id", id);
+    if (hasCloud()) {
+      setSyncStatus("syncing", "正在同步");
+      const result = await state.supabase.from("body_measurements").delete().eq("id", id);
+      if (result.error) {
+        setSyncStatus("error", "同步失败");
+        throw result.error;
+      }
+    }
     if ($("#bodyDialog").open) $("#bodyDialog").close();
     if (hasCloud()) await loadCloudData();
     else await loadData();
@@ -1424,26 +1477,45 @@ async function deleteBodyMeasurement(id) {
 }
 
 async function saveWorkoutCloud(workout) {
+  setSyncStatus("syncing", "正在同步");
   const { error } = await state.supabase.from("workouts").upsert(toWorkoutRow(workout));
-  if (error) throw error;
+  if (error) {
+    setSyncStatus("error", "同步失败");
+    throw error;
+  }
+  setSyncStatus("synced", "已同步");
 }
 
 async function saveMeasurementCloud(measurement) {
+  setSyncStatus("syncing", "正在同步");
   const { error } = await state.supabase.from("body_measurements").upsert(toMeasurementRow(measurement));
-  if (error) throw error;
+  if (error) {
+    setSyncStatus("error", "同步失败");
+    throw error;
+  }
+  setSyncStatus("synced", "已同步");
 }
 
 async function savePhotoCloud(photo) {
+  setSyncStatus("syncing", "正在同步");
   const row = await toPhotoRow(photo);
   const { error } = await state.supabase.from("progress_photos").upsert(row);
-  if (!error) return;
+  if (!error) {
+    setSyncStatus("synced", "已同步");
+    return;
+  }
   if (error.message?.includes("captured_at")) {
     const fallback = { ...row };
     delete fallback.captured_at;
     const retry = await state.supabase.from("progress_photos").upsert(fallback);
-    if (retry.error) throw retry.error;
+    if (retry.error) {
+      setSyncStatus("error", "同步失败");
+      throw retry.error;
+    }
+    setSyncStatus("synced", "已同步");
     return;
   }
+  setSyncStatus("error", "同步失败");
   throw error;
 }
 
@@ -1455,12 +1527,14 @@ async function uploadLocalDataToCloud() {
     getAll("photos"),
   ]);
   try {
+    setSyncStatus("syncing", "正在同步");
     for (const workout of workouts) await saveWorkoutCloud(workout);
     for (const measurement of measurements) await saveMeasurementCloud(measurement);
     for (const photo of photos) await savePhotoCloud(photo);
     await showMessage("本地数据已上传到云端");
     await loadCloudData();
   } catch (error) {
+    setSyncStatus("error", "同步失败");
     await showMessage(`上传失败：${error.message}`);
   }
 }
