@@ -586,6 +586,13 @@ details label {
   margin-top: 10px;
 }
 
+.template-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
 .exercise-editor {
   display: grid;
   gap: 10px;
@@ -765,8 +772,13 @@ details label {
   .set-grid,
   .set-grid.timed,
   .exercise-metrics,
-  .exercise-set-row {
+  .exercise-set-row,
+  .template-tools {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .template-tools select {
+    grid-column: 1 / -1;
   }
 
   .exercise-set-row .set-number,

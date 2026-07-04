@@ -1,9 +1,10 @@
 const DB_NAME = "fitness-tracker-db";
-const DB_VERSION = 2;
-const STORES = ["workouts", "measurements", "photos", "syncQueue"];
+const DB_VERSION = 3;
+const STORES = ["workouts", "measurements", "photos", "syncQueue", "templates"];
 const state = {
   db: null,
   workouts: [],
+  templates: [],
   measurements: [],
   photos: [],
   homeRange: "30",
@@ -197,12 +198,14 @@ async function replaceStore(storeName, items) {
 }
 
 async function loadData() {
-  const [workouts, measurements, photos] = await Promise.all([
+  const [workouts, templates, measurements, photos] = await Promise.all([
     getAll("workouts"),
+    getAll("templates"),
     getAll("measurements"),
     getAll("photos"),
   ]);
   state.workouts = workouts.sort((a, b) => b.date.localeCompare(a.date));
+  state.templates = templates.sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
   state.measurements = measurements.sort((a, b) => b.date.localeCompare(a.date));
   state.photos = photos.sort((a, b) => b.date.localeCompare(a.date));
   render();
@@ -404,6 +407,7 @@ function render() {
   renderMeasurements();
   renderPhotos();
   renderExerciseNameList();
+  renderTemplateOptions();
   drawCharts();
 }
 
@@ -444,6 +448,16 @@ function applyExerciseSuggestion(input) {
   const card = input.closest(".exercise-card");
   const type = $(".exercise-type", card);
   if (type) type.value = match.type;
+}
+
+function renderTemplateOptions() {
+  const select = $("#templateSelect");
+  if (!select) return;
+  select.innerHTML = [
+    `<option value="">选择模板</option>`,
+    ...state.templates.map((template) => `<option value="${escapeAttr(template.id)}">${escapeHtml(template.title)}</option>`),
+  ].join("");
+  $("#useTemplateButton")?.toggleAttribute("disabled", !state.templates.length);
 }
 
 function renderRecordMeta(selector, item) {
@@ -1138,6 +1152,7 @@ function openCreateDialog(id) {
 
 function resetWorkoutForm(workout) {
   renderExerciseNameList();
+  renderTemplateOptions();
   $("#workoutDialogTitle").textContent = workout ? "编辑训练" : "记录训练";
   $("#workoutId").value = workout?.id || "";
   $("#workoutDate").value = workout?.date || today();
@@ -1149,6 +1164,90 @@ function resetWorkoutForm(workout) {
   $("#deleteWorkoutButton").classList.toggle("hidden", !workout);
   $("#exerciseEditor").innerHTML = "";
   (workout?.exercises || [newExercise()]).forEach((exercise) => addExerciseEditor(exercise, false));
+}
+
+function getWorkoutFormExercises() {
+  return $$(".exercise-card").map((card) => {
+    const type = $(".exercise-type", card).value;
+    const notes = $(".exercise-notes", card)?.value.trim() || "";
+    const sets = $$(".exercise-set-row", card).flatMap((row) => {
+      const weight = num($(".set-weight", row)?.value);
+      const reps = num($(".set-reps", row)?.value);
+      const count = Math.max(1, Math.floor(num($(".set-count", row)?.value) || 1));
+      if (!weight && !reps) return [];
+      return Array.from({ length: count }, () => ({
+        id: uid(),
+        weight,
+        reps,
+      }));
+    });
+    return {
+      id: card.dataset.exerciseId || uid(),
+      name: $(".exercise-name", card).value.trim(),
+      type,
+      setCount: sets.length,
+      notes,
+      sets,
+    };
+  }).filter((exercise) => exercise.name && exercise.sets.length);
+}
+
+function cloneTemplateExercises(exercises = []) {
+  return exercises.map((exercise) => ({
+    ...exercise,
+    id: uid(),
+    sets: (exercise.sets || []).map((set) => ({ ...set, id: uid() })),
+  }));
+}
+
+async function saveWorkoutTemplate() {
+  const title = $("#workoutTitle").value.trim();
+  if (!title) {
+    await showMessage("先填写训练标题，再保存模板");
+    return;
+  }
+  const exercises = getWorkoutFormExercises();
+  if (!exercises.length) {
+    await showMessage("模板至少需要一个完整动作");
+    return;
+  }
+  const now = new Date().toISOString();
+  const existing = state.templates.find((template) => template.title.toLocaleLowerCase() === title.toLocaleLowerCase());
+  const template = {
+    id: existing?.id || uid(),
+    title,
+    durationMinutes: num($("#workoutDuration").value),
+    intensity: num($("#workoutIntensity").value),
+    notes: $("#workoutNotes").value.trim(),
+    exercises,
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
+  await put("templates", template);
+  state.templates = (await getAll("templates")).sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
+  renderTemplateOptions();
+  $("#templateSelect").value = template.id;
+  await showMessage("已保存为训练模板");
+}
+
+async function useWorkoutTemplate() {
+  const template = state.templates.find((item) => item.id === $("#templateSelect").value);
+  if (!template) {
+    await showMessage("请先选择一个模板");
+    return;
+  }
+  const draft = {
+    title: template.title,
+    date: today(),
+    durationMinutes: template.durationMinutes,
+    intensity: template.intensity,
+    notes: template.notes,
+    exercises: cloneTemplateExercises(template.exercises),
+  };
+  resetWorkoutForm(draft);
+  $("#workoutId").value = "";
+  $("#workoutDialogTitle").textContent = "从模板记录";
+  $("#deleteWorkoutButton").classList.add("hidden");
 }
 
 function copyWorkout(workout) {
@@ -1262,6 +1361,8 @@ function refreshSetNumbers(card) {
 
 function setupWorkoutForm() {
   $("#addExerciseButton").addEventListener("click", () => addExerciseEditor());
+  $("#saveTemplateButton").addEventListener("click", saveWorkoutTemplate);
+  $("#useTemplateButton").addEventListener("click", useWorkoutTemplate);
   $("#exerciseEditor").addEventListener("click", (event) => {
     if (event.target.closest(".add-set")) addSetEditor(event.target.closest(".exercise-card"));
     if (event.target.closest(".remove-set")) {
@@ -1283,29 +1384,7 @@ function setupWorkoutForm() {
 
 async function saveWorkout(event) {
   event.preventDefault();
-  const exercises = $$(".exercise-card").map((card) => {
-    const type = $(".exercise-type", card).value;
-    const notes = $(".exercise-notes", card)?.value.trim() || "";
-    const sets = $$(".exercise-set-row", card).flatMap((row) => {
-      const weight = num($(".set-weight", row)?.value);
-      const reps = num($(".set-reps", row)?.value);
-      const count = Math.max(1, Math.floor(num($(".set-count", row)?.value) || 1));
-      if (!weight && !reps) return [];
-      return Array.from({ length: count }, () => ({
-        id: uid(),
-        weight,
-        reps,
-      }));
-    });
-    return {
-      id: card.dataset.exerciseId || uid(),
-      name: $(".exercise-name", card).value.trim(),
-      type,
-      setCount: sets.length,
-      notes,
-      sets,
-    };
-  }).filter((exercise) => exercise.name && exercise.sets.length);
+  const exercises = getWorkoutFormExercises();
 
   if (!exercises.length) {
     await showMessage("至少添加一个动作，并填写重量、次数、组数或备注");
@@ -1667,6 +1746,7 @@ function setupBackup() {
       version: 1,
       exportedAt: new Date().toISOString(),
       workouts: state.workouts,
+      templates: state.templates,
       measurements: state.measurements,
       photos: state.photos,
     };
@@ -1691,6 +1771,7 @@ function setupBackup() {
     if (!await showConfirm("导入会合并到当前数据中，继续？", { title: "导入备份" })) return;
     await Promise.all([
       ...payload.workouts.map((item) => put("workouts", item)),
+      ...(payload.templates || []).map((item) => put("templates", item)),
       ...payload.measurements.map((item) => put("measurements", item)),
       ...payload.photos.map((item) => put("photos", item)),
     ]);
