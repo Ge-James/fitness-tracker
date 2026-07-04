@@ -891,6 +891,18 @@ details label {
   background: #fbfcfb;
 }
 
+.exercise-card .dialog-actions {
+  flex-wrap: wrap;
+}
+
+.exercise-insight {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .exercise-name-field {
   position: relative;
 }
