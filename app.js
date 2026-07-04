@@ -403,7 +403,47 @@ function render() {
   renderWorkouts();
   renderMeasurements();
   renderPhotos();
+  renderExerciseNameList();
   drawCharts();
+}
+
+function getExerciseLibrary() {
+  const library = new Map();
+  state.workouts.forEach((workout) => {
+    (workout.exercises || []).forEach((exercise) => {
+      const name = exercise.name?.trim();
+      if (!name) return;
+      const key = name.toLocaleLowerCase();
+      const existing = library.get(key);
+      const updatedAt = workout.updatedAt || workout.createdAt || workout.date || "";
+      if (!existing || updatedAt > existing.updatedAt) {
+        library.set(key, {
+          name,
+          type: exercise.type === "timed" ? "cardio" : exercise.type || "strength",
+          updatedAt,
+        });
+      }
+    });
+  });
+  return Array.from(library.values()).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+}
+
+function renderExerciseNameList() {
+  const list = $("#exerciseNameList");
+  if (!list) return;
+  list.innerHTML = getExerciseLibrary()
+    .map((exercise) => `<option value="${escapeAttr(exercise.name)}"></option>`)
+    .join("");
+}
+
+function applyExerciseSuggestion(input) {
+  const name = input.value.trim().toLocaleLowerCase();
+  if (!name) return;
+  const match = getExerciseLibrary().find((exercise) => exercise.name.toLocaleLowerCase() === name);
+  if (!match) return;
+  const card = input.closest(".exercise-card");
+  const type = $(".exercise-type", card);
+  if (type) type.value = match.type;
 }
 
 function renderRecordMeta(selector, item) {
@@ -1097,6 +1137,7 @@ function openCreateDialog(id) {
 }
 
 function resetWorkoutForm(workout) {
+  renderExerciseNameList();
   $("#workoutDialogTitle").textContent = workout ? "编辑训练" : "记录训练";
   $("#workoutId").value = workout?.id || "";
   $("#workoutDate").value = workout?.date || today();
@@ -1146,7 +1187,7 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
   card.dataset.exerciseId = exercise.id || uid();
   card.innerHTML = `
     <div class="field-row">
-      <label>动作名称<input class="exercise-name" type="text" value="${escapeAttr(exercise.name || "")}" placeholder="例如 卧推" required /></label>
+      <label>动作名称<input class="exercise-name" type="text" list="exerciseNameList" value="${escapeAttr(exercise.name || "")}" placeholder="例如 卧推" required /></label>
       <label>类型
         <select class="exercise-type">
           <option value="strength">重量次数</option>
@@ -1229,6 +1270,9 @@ function setupWorkoutForm() {
       refreshSetNumbers(card);
     }
     if (event.target.closest(".remove-exercise")) event.target.closest(".exercise-card").remove();
+  });
+  $("#exerciseEditor").addEventListener("change", (event) => {
+    if (event.target.classList.contains("exercise-name")) applyExerciseSuggestion(event.target);
   });
   $("#workoutForm").addEventListener("submit", saveWorkout);
   $("#deleteWorkoutButton").addEventListener("click", async () => {
