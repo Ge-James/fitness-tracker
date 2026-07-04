@@ -1,6 +1,6 @@
 const DB_NAME = "fitness-tracker-db";
-const DB_VERSION = 1;
-const STORES = ["workouts", "measurements", "photos"];
+const DB_VERSION = 2;
+const STORES = ["workouts", "measurements", "photos", "syncQueue"];
 const state = {
   db: null,
   workouts: [],
@@ -16,6 +16,8 @@ const state = {
   cloudReady: false,
   syncStatus: "local",
   syncMessage: "本地模式",
+  pendingSyncCount: 0,
+  syncInProgress: false,
 };
 
 const RANGE_LABELS = {
@@ -48,6 +50,10 @@ function updateSyncStatusUi() {
 }
 
 function markSyncReady() {
+  if (state.pendingSyncCount) {
+    setSyncStatus("pending", `待同步 ${state.pendingSyncCount}`);
+    return;
+  }
   if (state.user) setSyncStatus("synced", "已同步");
   else if (state.cloudReady) setSyncStatus("local", "未登录");
   else setSyncStatus("local", "本地模式");
@@ -177,6 +183,19 @@ function remove(storeName, id) {
   });
 }
 
+function clearStore(storeName) {
+  return new Promise((resolve, reject) => {
+    const request = tx(storeName, "readwrite").clear();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function replaceStore(storeName, items) {
+  await clearStore(storeName);
+  await Promise.all(items.map((item) => put(storeName, item)));
+}
+
 async function loadData() {
   const [workouts, measurements, photos] = await Promise.all([
     getAll("workouts"),
@@ -189,11 +208,99 @@ async function loadData() {
   render();
 }
 
+async function updatePendingSyncCount() {
+  const jobs = await getAll("syncQueue");
+  state.pendingSyncCount = jobs.length;
+  return jobs;
+}
+
+async function enqueueSync(type, action, payload) {
+  const now = new Date().toISOString();
+  const id = `${type}:${action}:${payload.id}`;
+  const existing = (await getAll("syncQueue")).find((job) => job.id === id);
+  await put("syncQueue", {
+    id,
+    type,
+    action,
+    recordId: payload.id,
+    payload,
+    attempts: existing?.attempts || 0,
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  });
+  await updatePendingSyncCount();
+  markSyncReady();
+  if (hasCloud()) processSyncQueue();
+}
+
+async function applySyncJob(job) {
+  if (job.type === "workout" && job.action === "upsert") await saveWorkoutCloud(job.payload);
+  if (job.type === "measurement" && job.action === "upsert") await saveMeasurementCloud(job.payload);
+  if (job.type === "photo" && job.action === "upsert") await savePhotoCloud(job.payload);
+  if (job.type === "workout" && job.action === "delete") {
+    const result = await state.supabase.from("workouts").delete().eq("id", job.recordId);
+    if (result.error) throw result.error;
+  }
+  if (job.type === "measurement" && job.action === "delete") {
+    const result = await state.supabase.from("body_measurements").delete().eq("id", job.recordId);
+    if (result.error) throw result.error;
+  }
+  if (job.type === "photo" && job.action === "delete") {
+    const result = await state.supabase.from("progress_photos").delete().eq("id", job.recordId);
+    if (result.error) throw result.error;
+    if (job.payload.imagePath) {
+      const storageResult = await state.supabase.storage.from("progress-photos").remove([job.payload.imagePath]);
+      if (storageResult.error) throw storageResult.error;
+    }
+  }
+}
+
+async function processSyncQueue() {
+  if (state.syncInProgress) return;
+  const jobs = (await updatePendingSyncCount()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  if (!jobs.length) {
+    markSyncReady();
+    return;
+  }
+  if (!hasCloud()) {
+    setSyncStatus("pending", `待同步 ${jobs.length}`);
+    return;
+  }
+  state.syncInProgress = true;
+  setSyncStatus("syncing", "正在同步");
+  try {
+    for (const job of jobs) {
+      try {
+        await applySyncJob(job);
+        await remove("syncQueue", job.id);
+      } catch (error) {
+        await put("syncQueue", {
+          ...job,
+          attempts: (job.attempts || 0) + 1,
+          updatedAt: new Date().toISOString(),
+          lastError: error.message || "Sync failed",
+        });
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    setSyncStatus("error", "同步失败");
+  } finally {
+    state.syncInProgress = false;
+    await updatePendingSyncCount();
+    if (!state.pendingSyncCount) setSyncStatus("synced", "已同步");
+    else if (state.syncStatus !== "error") setSyncStatus("pending", `待同步 ${state.pendingSyncCount}`);
+  }
+}
+
 async function loadCloudData() {
   if (!hasCloud()) {
     markSyncReady();
     return;
   }
+  await processSyncQueue();
+  if (state.pendingSyncCount) return;
   setSyncStatus("syncing", "正在同步");
   const [workoutsResult, bodyResult, photosResult] = await Promise.all([
     state.supabase.from("workouts").select("*").order("date", { ascending: false }),
@@ -208,6 +315,11 @@ async function loadCloudData() {
   state.workouts = workoutsResult.data.map(fromWorkoutRow);
   state.measurements = bodyResult.data.map(fromMeasurementRow);
   state.photos = await Promise.all(photosResult.data.map(fromPhotoRow));
+  await Promise.all([
+    replaceStore("workouts", state.workouts),
+    replaceStore("measurements", state.measurements),
+    replaceStore("photos", state.photos),
+  ]);
   render();
   setSyncStatus("synced", "已同步");
 }
@@ -1170,10 +1282,9 @@ async function saveWorkout(event) {
     updatedAt: now,
   };
   await put("workouts", workout);
-  if (hasCloud()) await saveWorkoutCloud(workout);
+  if (state.cloudReady) await enqueueSync("workout", "upsert", workout);
   $("#workoutDialog").close();
-  if (hasCloud()) await loadCloudData();
-  else await loadData();
+  await loadData();
 }
 
 function resetBodyForm(item) {
@@ -1225,10 +1336,9 @@ async function saveBody(event) {
     updatedAt: now,
   };
   await put("measurements", measurement);
-  if (hasCloud()) await saveMeasurementCloud(measurement);
+  if (state.cloudReady) await enqueueSync("measurement", "upsert", measurement);
   $("#bodyDialog").close();
-  if (hasCloud()) await loadCloudData();
-  else await loadData();
+  await loadData();
 }
 
 function resetPhotoForm(photo) {
@@ -1264,24 +1374,9 @@ function setupPhotoForm() {
     if (id && await showConfirm("确定删除这张照片？", { title: "删除照片", confirmText: "删除", danger: true })) {
       const photo = state.photos.find((item) => item.id === id);
       await remove("photos", id);
-      if (hasCloud()) {
-        setSyncStatus("syncing", "正在同步");
-        const result = await state.supabase.from("progress_photos").delete().eq("id", id);
-        if (result.error) {
-          setSyncStatus("error", "同步失败");
-          throw result.error;
-        }
-        if (photo?.imagePath) {
-          const storageResult = await state.supabase.storage.from("progress-photos").remove([photo.imagePath]);
-          if (storageResult.error) {
-            setSyncStatus("error", "同步失败");
-            throw storageResult.error;
-          }
-        }
-      }
+      if (state.cloudReady) await enqueueSync("photo", "delete", { id, imagePath: photo?.imagePath || "" });
       $("#photoDialog").close();
-      if (hasCloud()) await loadCloudData();
-      else await loadData();
+      await loadData();
     }
   });
 }
@@ -1398,10 +1493,9 @@ async function savePhoto(event) {
     updatedAt: now,
   };
   await put("photos", photo);
-  if (hasCloud()) await savePhotoCloud(photo);
+  if (state.cloudReady) await enqueueSync("photo", "upsert", photo);
   $("#photoDialog").close();
-  if (hasCloud()) await loadCloudData();
-  else await loadData();
+  await loadData();
 }
 
 function setupEditHandlers() {
@@ -1445,34 +1539,18 @@ function setupEditHandlers() {
 async function deleteWorkout(id) {
   if (id && await showConfirm("确定删除这次训练？", { title: "删除训练", confirmText: "删除", danger: true })) {
     await remove("workouts", id);
-    if (hasCloud()) {
-      setSyncStatus("syncing", "正在同步");
-      const result = await state.supabase.from("workouts").delete().eq("id", id);
-      if (result.error) {
-        setSyncStatus("error", "同步失败");
-        throw result.error;
-      }
-    }
+    if (state.cloudReady) await enqueueSync("workout", "delete", { id });
     if ($("#workoutDialog").open) $("#workoutDialog").close();
-    if (hasCloud()) await loadCloudData();
-    else await loadData();
+    await loadData();
   }
 }
 
 async function deleteBodyMeasurement(id) {
   if (id && await showConfirm("确定删除这条身体数据？", { title: "删除身体数据", confirmText: "删除", danger: true })) {
     await remove("measurements", id);
-    if (hasCloud()) {
-      setSyncStatus("syncing", "正在同步");
-      const result = await state.supabase.from("body_measurements").delete().eq("id", id);
-      if (result.error) {
-        setSyncStatus("error", "同步失败");
-        throw result.error;
-      }
-    }
+    if (state.cloudReady) await enqueueSync("measurement", "delete", { id });
     if ($("#bodyDialog").open) $("#bodyDialog").close();
-    if (hasCloud()) await loadCloudData();
-    else await loadData();
+    await loadData();
   }
 }
 
@@ -1610,11 +1688,17 @@ async function init() {
   setupBackup();
   setupChartInteractions();
   await loadData();
+  await updatePendingSyncCount();
+  markSyncReady();
   await restoreSession();
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("service-worker.js");
   }
   window.addEventListener("resize", drawCharts);
+  window.addEventListener("online", () => processSyncQueue());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") processSyncQueue();
+  });
 }
 
 init().catch((error) => {

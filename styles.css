@@ -104,6 +104,12 @@ button {
   color: var(--primary);
 }
 
+.sync-status.pending {
+  border-color: #d6c8ee;
+  background: #f2edfb;
+  color: #5d4b83;
+}
+
 .sync-status.error {
   border-color: #e5b7b0;
   background: #fae9e6;
