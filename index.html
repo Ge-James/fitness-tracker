@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=51" />
+    <link rel="stylesheet" href="styles.css?v=52" />
   </head>
   <body>
     <div class="app-shell">
@@ -48,12 +48,12 @@
 
           <div class="stats-grid">
             <article class="metric">
-              <span>最新体重</span>
+              <span id="weightMetricLabel">体重</span>
               <strong id="latestWeight">--</strong>
               <small id="weightDelta">暂无变化</small>
             </article>
             <article class="metric">
-              <span>最新腰围</span>
+              <span id="waistMetricLabel">腰围</span>
               <strong id="latestWaist">--</strong>
               <small id="waistDelta">暂无变化</small>
             </article>
@@ -436,6 +436,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=51"></script>
+    <script src="app.js?v=52"></script>
   </body>
 </html>
