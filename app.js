@@ -953,17 +953,29 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
 }
 
 function addSetEditor(card, set = {}, index) {
+  const previousSet = set.weight || set.reps ? null : getLastSetValues(card);
+  const values = previousSet || set;
   const row = document.createElement("div");
   row.className = "exercise-set-row";
   row.dataset.setId = set.id || uid();
   row.innerHTML = `
     <span class="set-number">${index === undefined ? $(".exercise-set-row", card).parentElement?.children.length + 1 || "" : index + 1}</span>
-    <label>重量 lb<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${set.weight || ""}" /></label>
-    <label>次数<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${set.reps || ""}" /></label>
+    <label>重量 lb<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${values.weight || ""}" /></label>
+    <label>次数<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${values.reps || ""}" /></label>
     <button class="icon-button remove-set" type="button" aria-label="删除组">×</button>
   `;
   $(".exercise-sets", card).appendChild(row);
   refreshSetNumbers(card);
+}
+
+function getLastSetValues(card) {
+  const rows = $$(".exercise-set-row", card);
+  const last = rows[rows.length - 1];
+  if (!last) return null;
+  return {
+    weight: $(".set-weight", last)?.value || "",
+    reps: $(".set-reps", last)?.value || "",
+  };
 }
 
 function refreshSetNumbers(card) {
