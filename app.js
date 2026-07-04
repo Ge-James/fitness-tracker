@@ -46,6 +46,17 @@ function formatDate(value) {
   return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric", weekday: "short" });
 }
 
+function formatDateTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function num(value) {
   if (value === "" || value === null || value === undefined) return undefined;
   const parsed = Number(value);
@@ -206,6 +217,22 @@ function render() {
   drawCharts();
 }
 
+function renderRecordMeta(selector, item) {
+  const target = $(selector);
+  if (!target) return;
+  if (!item) {
+    target.classList.add("hidden");
+    target.textContent = "";
+    return;
+  }
+  const parts = [];
+  if (item.capturedAt) parts.push(`拍摄：${formatDateTime(item.capturedAt)}`);
+  if (item.createdAt) parts.push(`创建：${formatDateTime(item.createdAt)}`);
+  if (item.updatedAt) parts.push(`更新：${formatDateTime(item.updatedAt)}`);
+  target.textContent = parts.join(" · ");
+  target.classList.toggle("hidden", !parts.length);
+}
+
 function toWorkoutRow(item) {
   return {
     id: item.id,
@@ -277,6 +304,7 @@ async function toPhotoRow(item) {
     user_id: state.user.id,
     date: item.date,
     image_path: imagePath,
+    captured_at: item.capturedAt || null,
     angle: item.angle || "front",
     weight: item.weight ?? null,
     notes: item.notes || null,
@@ -294,6 +322,7 @@ async function fromPhotoRow(row) {
     date: row.date,
     imageData: data?.signedUrl || "",
     imagePath: row.image_path,
+    capturedAt: row.captured_at || "",
     angle: row.angle || "front",
     weight: row.weight ?? undefined,
     notes: row.notes || "",
@@ -413,9 +442,9 @@ function renderWorkouts() {
 function formatExerciseSummary(exercise) {
   const set = exercise.sets?.[0] || {};
   const parts = [exercise.name];
+  if (exercise.sets?.length) parts.push(`${exercise.sets.length} 组`);
   if (set.weight) parts.push(`${set.weight} lb`);
   if (set.reps) parts.push(`${set.reps} 次`);
-  if (exercise.setCount) parts.push(`${exercise.setCount} 组`);
   return parts.join(" · ");
 }
 
@@ -453,17 +482,55 @@ function renderPhotos() {
     return;
   }
   const label = { front: "正面", side: "侧面", back: "背面", other: "其他" };
-  grid.innerHTML = state.photos.map((photo) => `
-    <article class="photo-card">
-      <button type="button" data-edit-photo="${photo.id}">
-        <img src="${photo.imageData}" alt="${formatDate(photo.date)} ${label[photo.angle] || "照片"}" loading="lazy" />
-        <div class="photo-caption">
-          <strong>${formatDate(photo.date)}</strong>
-          <span class="timeline-meta">${label[photo.angle] || "其他"}${photo.weight ? ` · ${photo.weight} kg` : ""}</span>
-        </div>
-      </button>
-    </article>
-  `).join("");
+  const groups = groupPhotosByDate(state.photos);
+  grid.innerHTML = groups.map(({ date, photos }) => {
+    const cover = photos.find((photo) => photo.angle === "front") || photos[0];
+    return `
+      <section class="photo-date-group">
+        <h3>${formatDate(date)}</h3>
+        <article class="photo-card">
+          <button type="button" data-edit-photo="${cover.id}">
+            <img src="${cover.imageData}" alt="${formatDate(cover.date)} ${label[cover.angle] || "照片"}" loading="lazy" />
+            <div class="photo-caption">
+              <strong>${label[cover.angle] || "其他"}${cover.weight ? ` · ${cover.weight} kg` : ""}</strong>
+              <span class="timeline-meta">${cover.capturedAt ? `拍摄 ${formatDateTime(cover.capturedAt)}` : "照片记录"}</span>
+              <span class="photo-count">${photos.length} 张照片</span>
+            </div>
+          </button>
+          ${photos.length > 1 ? `
+            <div class="photo-strip">
+              ${photos.map((photo) => `
+                <button type="button" data-edit-photo="${photo.id}" title="${label[photo.angle] || "其他"}">
+                  <img src="${photo.imageData}" alt="${label[photo.angle] || "其他"}" loading="lazy" />
+                </button>
+              `).join("")}
+            </div>
+          ` : ""}
+        </article>
+      </section>
+    `;
+  }).join("");
+}
+
+function groupPhotosByDate(photos) {
+  const map = new Map();
+  photos.forEach((photo) => {
+    if (!map.has(photo.date)) map.set(photo.date, []);
+    map.get(photo.date).push(photo);
+  });
+  return Array.from(map.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, items]) => ({
+      date,
+      photos: items.sort((a, b) => photoAngleRank(a.angle) - photoAngleRank(b.angle)),
+    }));
+}
+
+function photoAngleRank(angle) {
+  if (angle === "front") return 0;
+  if (angle === "side") return 1;
+  if (angle === "back") return 2;
+  return 3;
 }
 
 function drawCharts() {
@@ -847,21 +914,20 @@ function resetWorkoutForm(workout) {
   $("#workoutDuration").value = workout?.durationMinutes || "";
   $("#workoutIntensity").value = workout?.intensity || "";
   $("#workoutNotes").value = workout?.notes || "";
+  renderRecordMeta("#workoutMeta", workout);
   $("#deleteWorkoutButton").classList.toggle("hidden", !workout);
   $("#exerciseEditor").innerHTML = "";
-  (workout?.exercises || [newExercise()]).forEach((exercise) => addExerciseEditor(exercise));
+  (workout?.exercises || [newExercise()]).forEach((exercise) => addExerciseEditor(exercise, false));
 }
 
 function newExercise() {
-  return { id: uid(), name: "", type: "strength", setCount: "", sets: [{ id: uid(), weight: "", reps: "", distance: "", notes: "" }], notes: "" };
+  return { id: uid(), name: "", type: "strength", sets: [{ id: uid(), weight: "", reps: "", notes: "" }], notes: "" };
 }
 
-function addExerciseEditor(exercise = newExercise()) {
+function addExerciseEditor(exercise = newExercise(), atTop = true) {
   const card = document.createElement("section");
   card.className = "exercise-card";
   card.dataset.exerciseId = exercise.id || uid();
-  const firstSet = exercise.sets?.[0] || {};
-  card.dataset.setId = firstSet.id || uid();
   card.innerHTML = `
     <div class="field-row">
       <label>动作名称<input class="exercise-name" type="text" value="${escapeAttr(exercise.name || "")}" placeholder="例如 卧推" required /></label>
@@ -873,23 +939,49 @@ function addExerciseEditor(exercise = newExercise()) {
         </select>
       </label>
     </div>
-    <div class="exercise-metrics">
-      <label>重量 lb<input class="exercise-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${firstSet.weight || ""}" /></label>
-      <label>次数<input class="exercise-reps" type="number" step="1" min="0" inputmode="numeric" value="${firstSet.reps || ""}" /></label>
-      <label>组数<input class="exercise-set-count" type="number" step="1" min="0" inputmode="numeric" value="${exercise.setCount || exercise.sets?.length || ""}" placeholder="例如 4" /></label>
-    </div>
-    <label>备注<input class="exercise-notes" type="text" value="${escapeAttr(exercise.notes || firstSet.notes || "")}" /></label>
+    <div class="exercise-sets"></div>
+    <label>动作备注<input class="exercise-notes" type="text" value="${escapeAttr(exercise.notes || "")}" /></label>
     <div class="dialog-actions">
       <button class="danger-button remove-exercise" type="button">删除动作</button>
+      <button class="secondary-button add-set" type="button">添加组</button>
     </div>
   `;
   $(".exercise-type", card).value = exercise.type === "timed" ? "cardio" : exercise.type || "strength";
-  $("#exerciseEditor").appendChild(card);
+  (exercise.sets?.length ? exercise.sets : [{ id: uid() }]).forEach((set, index) => addSetEditor(card, set, index));
+  if (atTop) $("#exerciseEditor").prepend(card);
+  else $("#exerciseEditor").appendChild(card);
+}
+
+function addSetEditor(card, set = {}, index) {
+  const row = document.createElement("div");
+  row.className = "exercise-set-row";
+  row.dataset.setId = set.id || uid();
+  row.innerHTML = `
+    <span class="set-number">${index === undefined ? $(".exercise-set-row", card).parentElement?.children.length + 1 || "" : index + 1}</span>
+    <label>重量 lb<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${set.weight || ""}" /></label>
+    <label>次数<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${set.reps || ""}" /></label>
+    <label>备注<input class="set-notes" type="text" value="${escapeAttr(set.notes || "")}" /></label>
+    <button class="icon-button remove-set" type="button" aria-label="删除组">×</button>
+  `;
+  $(".exercise-sets", card).appendChild(row);
+  refreshSetNumbers(card);
+}
+
+function refreshSetNumbers(card) {
+  $$(".exercise-set-row", card).forEach((row, index) => {
+    $(".set-number", row).textContent = index + 1;
+  });
 }
 
 function setupWorkoutForm() {
   $("#addExerciseButton").addEventListener("click", () => addExerciseEditor());
   $("#exerciseEditor").addEventListener("click", (event) => {
+    if (event.target.closest(".add-set")) addSetEditor(event.target.closest(".exercise-card"));
+    if (event.target.closest(".remove-set")) {
+      const card = event.target.closest(".exercise-card");
+      event.target.closest(".exercise-set-row").remove();
+      refreshSetNumbers(card);
+    }
     if (event.target.closest(".remove-exercise")) event.target.closest(".exercise-card").remove();
   });
   $("#workoutForm").addEventListener("submit", saveWorkout);
@@ -904,22 +996,21 @@ async function saveWorkout(event) {
   const exercises = $$(".exercise-card").map((card) => {
     const type = $(".exercise-type", card).value;
     const notes = $(".exercise-notes", card)?.value.trim() || "";
-    const set = {
-      id: card.dataset.setId || uid(),
-      weight: num($(".exercise-weight", card)?.value),
-      reps: num($(".exercise-reps", card)?.value),
-      notes,
-    };
-    const setCount = num($(".exercise-set-count", card)?.value);
+    const sets = $$(".exercise-set-row", card).map((row) => ({
+      id: row.dataset.setId || uid(),
+      weight: num($(".set-weight", row)?.value),
+      reps: num($(".set-reps", row)?.value),
+      notes: $(".set-notes", row)?.value.trim() || "",
+    })).filter((set) => set.weight || set.reps || set.notes);
     return {
       id: card.dataset.exerciseId || uid(),
       name: $(".exercise-name", card).value.trim(),
       type,
-      setCount,
+      setCount: sets.length,
       notes,
-      sets: [set].filter((item) => item.weight || item.reps || item.notes || setCount),
+      sets,
     };
-  }).filter((exercise) => exercise.name && (exercise.sets.length || exercise.setCount));
+  }).filter((exercise) => exercise.name && exercise.sets.length);
 
   if (!exercises.length) {
     alert("至少添加一个动作，并填写重量、次数、组数或备注");
@@ -954,6 +1045,7 @@ function resetBodyForm(item) {
     $(`#body${name}`).value = item?.[name === "Fat" ? "bodyFat" : name.toLowerCase()] || "";
   });
   $("#bodyNotes").value = item?.notes || "";
+  renderRecordMeta("#bodyMeta", item);
   $("#deleteBodyButton").classList.toggle("hidden", !item);
 }
 
@@ -1003,12 +1095,14 @@ async function saveBody(event) {
 function resetPhotoForm(photo) {
   $("#photoId").value = photo?.id || "";
   $("#photoDate").value = photo?.date || today();
+  $("#photoCapturedAt").value = photo?.capturedAt || "";
   $("#photoFile").value = "";
   $("#photoAngle").value = photo?.angle || "front";
   $("#photoWeight").value = photo?.weight || "";
   $("#photoNotes").value = photo?.notes || "";
   $("#deletePhotoButton").classList.toggle("hidden", !photo);
   state.draftPhotoData = photo?.imageData || "";
+  renderRecordMeta("#photoMeta", photo);
   renderPhotoPreview();
 }
 
@@ -1016,6 +1110,12 @@ function setupPhotoForm() {
   $("#photoFile").addEventListener("change", async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+    const capturedAt = await readPhotoCapturedAt(file);
+    if (capturedAt) {
+      $("#photoCapturedAt").value = capturedAt;
+      $("#photoDate").value = capturedAt.slice(0, 10);
+      renderRecordMeta("#photoMeta", { capturedAt });
+    }
     state.draftPhotoData = await compressImage(file);
     renderPhotoPreview();
   });
@@ -1067,6 +1167,66 @@ function compressImage(file) {
   });
 }
 
+async function readPhotoCapturedAt(file) {
+  if (!file.type.includes("jpeg") && !file.type.includes("jpg")) return "";
+  try {
+    const buffer = await file.arrayBuffer();
+    const view = new DataView(buffer);
+    if (view.getUint16(0) !== 0xffd8) return "";
+    let offset = 2;
+    while (offset < view.byteLength) {
+      const marker = view.getUint16(offset);
+      offset += 2;
+      const size = view.getUint16(offset);
+      offset += 2;
+      if (marker === 0xffe1) {
+        return parseExifDate(view, offset, size - 2);
+      }
+      offset += size - 2;
+    }
+  } catch {
+    return "";
+  }
+  return "";
+}
+
+function parseExifDate(view, start, length) {
+  const header = readAscii(view, start, 6);
+  if (header !== "Exif\0\0") return "";
+  const tiff = start + 6;
+  const little = readAscii(view, tiff, 2) === "II";
+  const get16 = (offset) => view.getUint16(offset, little);
+  const get32 = (offset) => view.getUint32(offset, little);
+  const ifd0 = tiff + get32(tiff + 4);
+  const exifPointer = findExifTag(view, ifd0, 0x8769, get16, get32);
+  if (!exifPointer) return "";
+  const exifIfd = tiff + exifPointer;
+  const datePointer = findExifTag(view, exifIfd, 0x9003, get16, get32) || findExifTag(view, exifIfd, 0x0132, get16, get32);
+  if (!datePointer) return "";
+  const raw = readAscii(view, tiff + datePointer, 19);
+  const match = raw.match(/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return "";
+  const [, year, month, day, hour, minute, second] = match;
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+}
+
+function findExifTag(view, ifdOffset, tag, get16, get32) {
+  const entries = get16(ifdOffset);
+  for (let index = 0; index < entries; index += 1) {
+    const entry = ifdOffset + 2 + index * 12;
+    if (get16(entry) === tag) return get32(entry + 8);
+  }
+  return 0;
+}
+
+function readAscii(view, start, length) {
+  let text = "";
+  for (let index = 0; index < length; index += 1) {
+    text += String.fromCharCode(view.getUint8(start + index));
+  }
+  return text;
+}
+
 async function savePhoto(event) {
   event.preventDefault();
   if (!state.draftPhotoData) {
@@ -1080,6 +1240,7 @@ async function savePhoto(event) {
     date: $("#photoDate").value,
     imageData: state.draftPhotoData,
     imagePath: existing?.imagePath || "",
+    capturedAt: $("#photoCapturedAt").value || existing?.capturedAt || "",
     angle: $("#photoAngle").value,
     weight: num($("#photoWeight").value),
     notes: $("#photoNotes").value.trim(),
@@ -1158,7 +1319,15 @@ async function saveMeasurementCloud(measurement) {
 async function savePhotoCloud(photo) {
   const row = await toPhotoRow(photo);
   const { error } = await state.supabase.from("progress_photos").upsert(row);
-  if (error) throw error;
+  if (!error) return;
+  if (error.message?.includes("captured_at")) {
+    const fallback = { ...row };
+    delete fallback.captured_at;
+    const retry = await state.supabase.from("progress_photos").upsert(fallback);
+    if (retry.error) throw retry.error;
+    return;
+  }
+  throw error;
 }
 
 async function uploadLocalDataToCloud() {

@@ -32,12 +32,16 @@ create table if not exists public.progress_photos (
   user_id uuid not null references auth.users(id) on delete cascade,
   date date not null,
   image_path text not null,
+  captured_at timestamptz,
   angle text,
   weight numeric,
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.progress_photos
+add column if not exists captured_at timestamptz;
 
 insert into storage.buckets (id, name, public)
 values ('progress-photos', 'progress-photos', false)

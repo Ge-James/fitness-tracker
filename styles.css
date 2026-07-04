@@ -400,6 +400,28 @@ canvas {
   padding: 10px;
 }
 
+.photo-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.photo-strip button {
+  border: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  padding: 0;
+  background: var(--surface-2);
+}
+
+.photo-strip img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
 .bottom-nav {
   position: fixed;
   right: 0;
@@ -536,6 +558,54 @@ details label {
   min-width: 0;
 }
 
+.exercise-sets {
+  display: grid;
+  gap: 8px;
+}
+
+.exercise-set-row {
+  display: grid;
+  grid-template-columns: 28px repeat(3, minmax(0, 1fr)) 42px;
+  gap: 8px;
+  align-items: end;
+}
+
+.set-number {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.record-meta {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.photo-date-group {
+  display: grid;
+  gap: 8px;
+}
+
+.photo-date-group h3 {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.photo-count {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--primary);
+  font-size: 12px;
+}
+
 .set-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr)) 42px;
@@ -645,7 +715,13 @@ details label {
 
   .set-grid,
   .set-grid.timed,
-  .exercise-metrics {
+  .exercise-metrics,
+  .exercise-set-row {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .exercise-set-row .set-number,
+  .exercise-set-row .remove-set {
+    grid-column: span 1;
   }
 }

@@ -136,6 +136,7 @@
           <label>强度 1-10<input id="workoutIntensity" type="number" min="1" max="10" inputmode="decimal" /></label>
         </div>
         <label>备注<textarea id="workoutNotes" rows="2"></textarea></label>
+        <p class="record-meta hidden" id="workoutMeta"></p>
         <div class="section-title compact">
           <h3>动作</h3>
           <button class="text-button" id="addExerciseButton" type="button">添加动作</button>
@@ -174,6 +175,7 @@
           <label>体脂率 %<input id="bodyFat" type="number" min="0" step="0.1" inputmode="decimal" /></label>
         </details>
         <label>备注<textarea id="bodyNotes" rows="2"></textarea></label>
+        <p class="record-meta hidden" id="bodyMeta"></p>
         <div class="dialog-actions">
           <button class="danger-button hidden" id="deleteBodyButton" type="button">删除</button>
           <button class="secondary-button" type="button" data-close="bodyDialog">取消</button>
@@ -189,6 +191,7 @@
           <button class="icon-button" value="cancel" type="button" data-close="photoDialog" aria-label="关闭">×</button>
         </div>
         <input type="hidden" id="photoId" />
+        <input type="hidden" id="photoCapturedAt" />
         <label>日期<input id="photoDate" type="date" required /></label>
         <label>照片<input id="photoFile" type="file" accept="image/*" /></label>
         <div id="photoPreview" class="photo-preview empty-state">选择照片后会显示预览</div>
@@ -204,6 +207,7 @@
           <label>体重 kg<input id="photoWeight" type="number" min="0" step="0.1" inputmode="decimal" /></label>
         </div>
         <label>备注<textarea id="photoNotes" rows="2"></textarea></label>
+        <p class="record-meta hidden" id="photoMeta"></p>
         <div class="dialog-actions">
           <button class="danger-button hidden" id="deletePhotoButton" type="button">删除</button>
           <button class="secondary-button" type="button" data-close="photoDialog">取消</button>
