@@ -908,7 +908,7 @@ function renderWorkouts() {
     list.innerHTML = `<div class="empty-state">先记录一次训练，后面就能看到历史</div>`;
     return;
   }
-  const query = state.workoutSearch.trim().toLocaleLowerCase();
+  const query = getWorkoutSearchQuery();
   const workouts = query ? state.workouts.filter((workout) => matchesWorkoutSearch(workout, query)) : state.workouts;
   if (!workouts.length) {
     list.innerHTML = `<div class="empty-state">没有找到匹配的训练</div>`;
@@ -944,6 +944,10 @@ function renderWorkouts() {
   }).join("");
 }
 
+function getWorkoutSearchQuery() {
+  return state.workoutSearch.trim().toLocaleLowerCase();
+}
+
 function matchesWorkoutSearch(workout, query) {
   const text = [
     workout.title,
@@ -962,12 +966,18 @@ function matchesWorkoutSearch(workout, query) {
 function renderTemplates() {
   const list = $("#templateList");
   if (!list) return;
-  $("#templateCount").textContent = `${state.templates.length} 个模板`;
+  const query = getWorkoutSearchQuery();
+  const templates = query ? state.templates.filter((template) => matchesTemplateSearch(template, query)) : state.templates;
+  $("#templateCount").textContent = `${templates.length} 个模板`;
   if (!state.templates.length) {
     list.innerHTML = `<div class="empty-state compact-empty">还没有模板。保存一次训练模板后会显示在这里。</div>`;
     return;
   }
-  list.innerHTML = state.templates.map((template) => {
+  if (!templates.length) {
+    list.innerHTML = `<div class="empty-state compact-empty">没有匹配的模板</div>`;
+    return;
+  }
+  list.innerHTML = templates.map((template) => {
     const exercises = template.exercises || [];
     const setCount = exercises.reduce((sum, item) => sum + (item.setCount || item.sets?.length || 0), 0);
     return `
@@ -988,6 +998,19 @@ function renderTemplates() {
       </article>
     `;
   }).join("");
+}
+
+function matchesTemplateSearch(template, query) {
+  const text = [
+    template.title,
+    template.notes,
+    ...(template.exercises || []).flatMap((exercise) => [
+      exercise.name,
+      exercise.notes,
+      formatExerciseSummary(exercise),
+    ]),
+  ].filter(Boolean).join(" ").toLocaleLowerCase();
+  return text.includes(query);
 }
 
 function getExerciseHistory() {
@@ -1046,10 +1069,16 @@ function estimateOneRepMax(weight, reps) {
 function renderExerciseHistoryList() {
   const list = $("#exerciseHistoryList");
   if (!list) return;
-  const history = getExerciseHistory();
+  const query = getWorkoutSearchQuery();
+  const allHistory = getExerciseHistory();
+  const history = query ? allHistory.filter((item) => matchesExerciseHistorySearch(item, query)) : allHistory;
   $("#exerciseHistoryCount").textContent = `${history.length} 个动作`;
-  if (!history.length) {
+  if (!allHistory.length) {
     list.innerHTML = `<div class="empty-state compact-empty">记录训练后，这里会自动整理动作历史。</div>`;
+    return;
+  }
+  if (!history.length) {
+    list.innerHTML = `<div class="empty-state compact-empty">没有匹配的动作</div>`;
     return;
   }
   list.innerHTML = history.map((item) => `
@@ -1061,6 +1090,22 @@ function renderExerciseHistoryList() {
       <span class="history-action-stat">${item.bestWeight ? `${item.bestWeight} lb` : `${item.bestReps || 0} 次`}</span>
     </button>
   `).join("");
+}
+
+function matchesExerciseHistorySearch(item, query) {
+  const text = [
+    item.name,
+    item.bestWeight ? `${item.bestWeight} lb` : "",
+    item.bestReps ? `${item.bestReps} 次` : "",
+    ...(item.records || []).flatMap((record) => [
+      record.workoutTitle,
+      record.date,
+      formatDate(record.date),
+      record.notes,
+      ...formatSetGroups(record.sets),
+    ]),
+  ].filter(Boolean).join(" ").toLocaleLowerCase();
+  return text.includes(query);
 }
 
 function openExerciseHistory(name) {
@@ -1921,6 +1966,8 @@ function refreshSetNumbers(card) {
 function setupWorkoutForm() {
   $("#workoutSearch")?.addEventListener("input", (event) => {
     state.workoutSearch = event.target.value;
+    renderTemplates();
+    renderExerciseHistoryList();
     renderWorkouts();
   });
   $("#addExerciseButton").addEventListener("click", () => addExerciseEditor());

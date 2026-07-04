@@ -1,9 +1,9 @@
-const CACHE_NAME = "fitness-tracker-v53";
+const CACHE_NAME = "fitness-tracker-v54";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=53",
-  "./app.js?v=53",
+  "./styles.css?v=54",
+  "./app.js?v=54",
   "./supabase-config.js",
   "./manifest.webmanifest",
   "./icon.svg"
