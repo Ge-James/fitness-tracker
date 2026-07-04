@@ -406,7 +406,6 @@ function render() {
   renderWorkouts();
   renderMeasurements();
   renderPhotos();
-  renderExerciseNameList();
   renderTemplateOptions();
   drawCharts();
 }
@@ -432,22 +431,47 @@ function getExerciseLibrary() {
   return Array.from(library.values()).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
 }
 
-function renderExerciseNameList() {
-  const list = $("#exerciseNameList");
-  if (!list) return;
-  list.innerHTML = getExerciseLibrary()
-    .map((exercise) => `<option value="${escapeAttr(exercise.name)}"></option>`)
-    .join("");
-}
-
-function applyExerciseSuggestion(input) {
+function applyExerciseSuggestion(input, exercise) {
+  if (exercise) input.value = exercise.name;
   const name = input.value.trim().toLocaleLowerCase();
   if (!name) return;
-  const match = getExerciseLibrary().find((exercise) => exercise.name.toLocaleLowerCase() === name);
+  const match = exercise || getExerciseLibrary().find((item) => item.name.toLocaleLowerCase() === name);
   if (!match) return;
   const card = input.closest(".exercise-card");
   const type = $(".exercise-type", card);
   if (type) type.value = match.type;
+  hideExerciseSuggestions(card);
+}
+
+function renderExerciseSuggestions(input) {
+  const card = input.closest(".exercise-card");
+  const panel = $(".exercise-suggestions", card);
+  if (!panel) return;
+  const query = input.value.trim().toLocaleLowerCase();
+  const suggestions = getExerciseLibrary()
+    .filter((exercise) => !query || exercise.name.toLocaleLowerCase().includes(query))
+    .slice(0, 8);
+  if (!suggestions.length) {
+    hideExerciseSuggestions(card);
+    return;
+  }
+  panel.innerHTML = suggestions.map((exercise) => `
+    <button class="exercise-suggestion" type="button" data-exercise-name="${escapeAttr(exercise.name)}">
+      <span>${escapeHtml(exercise.name)}</span>
+      <small>${exercise.type === "cardio" ? "有氧" : exercise.type === "other" ? "其他" : "重量次数"}</small>
+    </button>
+  `).join("");
+  panel.classList.remove("hidden");
+}
+
+function hideExerciseSuggestions(card) {
+  $(".exercise-suggestions", card)?.classList.add("hidden");
+}
+
+function hideAllExerciseSuggestions(exceptCard) {
+  $$(".exercise-card").forEach((card) => {
+    if (card !== exceptCard) hideExerciseSuggestions(card);
+  });
 }
 
 function renderTemplateOptions() {
@@ -1151,7 +1175,6 @@ function openCreateDialog(id) {
 }
 
 function resetWorkoutForm(workout) {
-  renderExerciseNameList();
   renderTemplateOptions();
   $("#workoutDialogTitle").textContent = workout ? "编辑训练" : "记录训练";
   $("#workoutId").value = workout?.id || "";
@@ -1286,7 +1309,10 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
   card.dataset.exerciseId = exercise.id || uid();
   card.innerHTML = `
     <div class="field-row">
-      <label>动作名称<input class="exercise-name" type="text" list="exerciseNameList" value="${escapeAttr(exercise.name || "")}" placeholder="例如 卧推" required /></label>
+      <label class="exercise-name-field">动作名称
+        <input class="exercise-name" type="text" value="${escapeAttr(exercise.name || "")}" placeholder="例如 卧推" autocomplete="off" required />
+        <div class="exercise-suggestions hidden"></div>
+      </label>
       <label>类型
         <select class="exercise-type">
           <option value="strength">重量次数</option>
@@ -1364,6 +1390,14 @@ function setupWorkoutForm() {
   $("#saveTemplateButton").addEventListener("click", saveWorkoutTemplate);
   $("#useTemplateButton").addEventListener("click", useWorkoutTemplate);
   $("#exerciseEditor").addEventListener("click", (event) => {
+    const suggestion = event.target.closest(".exercise-suggestion");
+    if (suggestion) {
+      const card = suggestion.closest(".exercise-card");
+      const input = $(".exercise-name", card);
+      const exercise = getExerciseLibrary().find((item) => item.name === suggestion.dataset.exerciseName);
+      if (input && exercise) applyExerciseSuggestion(input, exercise);
+      return;
+    }
     if (event.target.closest(".add-set")) addSetEditor(event.target.closest(".exercise-card"));
     if (event.target.closest(".remove-set")) {
       const card = event.target.closest(".exercise-card");
@@ -1372,8 +1406,20 @@ function setupWorkoutForm() {
     }
     if (event.target.closest(".remove-exercise")) event.target.closest(".exercise-card").remove();
   });
+  $("#exerciseEditor").addEventListener("focusin", (event) => {
+    if (!event.target.classList.contains("exercise-name")) return;
+    const card = event.target.closest(".exercise-card");
+    hideAllExerciseSuggestions(card);
+    renderExerciseSuggestions(event.target);
+  });
+  $("#exerciseEditor").addEventListener("input", (event) => {
+    if (event.target.classList.contains("exercise-name")) renderExerciseSuggestions(event.target);
+  });
   $("#exerciseEditor").addEventListener("change", (event) => {
     if (event.target.classList.contains("exercise-name")) applyExerciseSuggestion(event.target);
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".exercise-name-field")) hideAllExerciseSuggestions();
   });
   $("#workoutForm").addEventListener("submit", saveWorkout);
   $("#deleteWorkoutButton").addEventListener("click", async () => {
