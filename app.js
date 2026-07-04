@@ -20,6 +20,7 @@ const state = {
   syncMessage: "本地模式",
   pendingSyncCount: 0,
   syncInProgress: false,
+  scrollLockY: 0,
 };
 
 const RANGE_LABELS = {
@@ -61,6 +62,38 @@ function markSyncReady() {
   else setSyncStatus("local", "本地模式");
 }
 
+function openModal(dialog) {
+  if (!dialog || dialog.open) return;
+  lockPageScroll();
+  dialog.showModal();
+}
+
+function closeModal(dialog) {
+  if (dialog?.open) dialog.close();
+}
+
+function syncModalLock() {
+  if ($$("dialog").some((dialog) => dialog.open)) {
+    lockPageScroll();
+  } else {
+    unlockPageScroll();
+  }
+}
+
+function lockPageScroll() {
+  if (document.body.classList.contains("modal-open")) return;
+  state.scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.body.style.top = `-${state.scrollLockY}px`;
+  document.body.classList.add("modal-open");
+}
+
+function unlockPageScroll() {
+  if (!document.body.classList.contains("modal-open")) return;
+  document.body.classList.remove("modal-open");
+  document.body.style.top = "";
+  window.scrollTo(0, state.scrollLockY || 0);
+}
+
 function showMessage(message, title = "提示") {
   return showDialogMessage({ title, message, confirmText: "知道了", showCancel: false });
 }
@@ -95,7 +128,7 @@ function showDialogMessage({ title, message, confirmText, cancelText, danger, sh
       cancelButton.onclick = null;
       closeButton.onclick = null;
       dialog.oncancel = null;
-      if (dialog.open) dialog.close();
+      closeModal(dialog);
       resolve(value);
     };
 
@@ -106,7 +139,7 @@ function showDialogMessage({ title, message, confirmText, cancelText, danger, sh
       event.preventDefault();
       cleanup(false);
     };
-    dialog.showModal();
+    openModal(dialog);
   });
 }
 
@@ -359,7 +392,7 @@ async function restoreSession() {
 function setupAuth() {
   $("#authButton").addEventListener("click", () => {
     updateAuthUi();
-    $("#authDialog").showModal();
+    openModal($("#authDialog"));
   });
   $("#signUpButton").addEventListener("click", async () => {
     const email = $("#authEmail").value.trim();
@@ -384,7 +417,7 @@ function setupAuth() {
     if (error) await showMessage(error.message);
     else {
       state.user = data.user;
-      $("#authDialog").close();
+      closeModal($("#authDialog"));
       await loadCloudData();
     }
     updateAuthUi();
@@ -392,7 +425,7 @@ function setupAuth() {
   $("#signOutButton").addEventListener("click", async () => {
     if (state.supabase) await state.supabase.auth.signOut();
     state.user = null;
-    $("#authDialog").close();
+    closeModal($("#authDialog"));
     await loadData();
     updateAuthUi();
   });
@@ -901,7 +934,7 @@ function openExerciseHistory(name) {
       ${record.notes ? `<p class="muted">${escapeHtml(record.notes)}</p>` : ""}
     </article>
   `).join("");
-  $("#exerciseHistoryDialog").showModal();
+  openModal($("#exerciseHistoryDialog"));
 }
 
 function formatSetGroups(sets = []) {
@@ -1426,9 +1459,13 @@ function setupDialogs() {
     button.addEventListener("click", () => openCreateDialog(button.dataset.open));
   });
   $$("[data-close]").forEach((button) => {
-    button.addEventListener("click", () => $(`#${button.dataset.close}`).close());
+    button.addEventListener("click", () => closeModal($(`#${button.dataset.close}`)));
   });
-  $("#backupButton").addEventListener("click", () => $("#backupDialog").showModal());
+  $("#backupButton").addEventListener("click", () => openModal($("#backupDialog")));
+  $$("dialog").forEach((dialog) => {
+    dialog.addEventListener("close", syncModalLock);
+    dialog.addEventListener("cancel", () => setTimeout(syncModalLock, 0));
+  });
 }
 
 function openCreateDialog(id) {
@@ -1436,7 +1473,7 @@ function openCreateDialog(id) {
   if (id === "bodyDialog") resetBodyForm();
   if (id === "photoDialog") resetPhotoForm();
   if (id === "sleepDialog") resetSleepForm();
-  $(`#${id}`).showModal();
+  openModal($(`#${id}`));
 }
 
 function resetWorkoutForm(workout) {
@@ -1540,7 +1577,7 @@ async function openWorkoutFromTemplate(template) {
   $("#workoutId").value = "";
   $("#workoutDialogTitle").textContent = "从模板记录";
   $("#deleteWorkoutButton").classList.add("hidden");
-  if (!$("#workoutDialog").open) $("#workoutDialog").showModal();
+  if (!$("#workoutDialog").open) openModal($("#workoutDialog"));
 }
 
 async function deleteWorkoutTemplate(id) {
@@ -1574,7 +1611,7 @@ function copyWorkout(workout) {
   $("#workoutId").value = "";
   $("#workoutDialogTitle").textContent = "复制训练";
   $("#deleteWorkoutButton").classList.add("hidden");
-  $("#workoutDialog").showModal();
+  openModal($("#workoutDialog"));
 }
 
 function newExercise() {
@@ -1730,7 +1767,7 @@ async function saveWorkout(event) {
   };
   await put("workouts", workout);
   if (state.cloudReady) await enqueueSync("workout", "upsert", workout);
-  $("#workoutDialog").close();
+  closeModal($("#workoutDialog"));
   await loadData();
 }
 
@@ -1784,7 +1821,7 @@ async function saveBody(event) {
   };
   await put("measurements", measurement);
   if (state.cloudReady) await enqueueSync("measurement", "upsert", measurement);
-  $("#bodyDialog").close();
+  closeModal($("#bodyDialog"));
   await loadData();
 }
 
@@ -1843,7 +1880,7 @@ async function saveSleep(event) {
   };
   await put("sleep", entry);
   if (state.cloudReady) await enqueueSync("sleep", "upsert", entry);
-  $("#sleepDialog").close();
+  closeModal($("#sleepDialog"));
   await loadData();
 }
 
@@ -1851,7 +1888,7 @@ async function deleteSleepRecord(id) {
   if (id && await showConfirm("确定删除这条状态记录？", { title: "删除状态记录", confirmText: "删除", danger: true })) {
     await remove("sleep", id);
     if (state.cloudReady) await enqueueSync("sleep", "delete", { id });
-    if ($("#sleepDialog").open) $("#sleepDialog").close();
+    if ($("#sleepDialog").open) closeModal($("#sleepDialog"));
     await loadData();
   }
 }
@@ -1890,7 +1927,7 @@ function setupPhotoForm() {
       const photo = state.photos.find((item) => item.id === id);
       await remove("photos", id);
       if (state.cloudReady) await enqueueSync("photo", "delete", { id, imagePath: photo?.imagePath || "" });
-      $("#photoDialog").close();
+      closeModal($("#photoDialog"));
       await loadData();
     }
   });
@@ -2009,7 +2046,7 @@ async function savePhoto(event) {
   };
   await put("photos", photo);
   if (state.cloudReady) await enqueueSync("photo", "upsert", photo);
-  $("#photoDialog").close();
+  closeModal($("#photoDialog"));
   await loadData();
 }
 
@@ -2063,19 +2100,19 @@ function setupEditHandlers() {
     }
     if (workoutButton) {
       resetWorkoutForm(state.workouts.find((item) => item.id === workoutButton.dataset.editWorkout));
-      $("#workoutDialog").showModal();
+      openModal($("#workoutDialog"));
     }
     if (bodyButton) {
       resetBodyForm(state.measurements.find((item) => item.id === bodyButton.dataset.editBody));
-      $("#bodyDialog").showModal();
+      openModal($("#bodyDialog"));
     }
     if (photoButton) {
       resetPhotoForm(state.photos.find((item) => item.id === photoButton.dataset.editPhoto));
-      $("#photoDialog").showModal();
+      openModal($("#photoDialog"));
     }
     if (sleepButton) {
       resetSleepForm(state.sleepEntries.find((item) => item.id === sleepButton.dataset.editSleep));
-      $("#sleepDialog").showModal();
+      openModal($("#sleepDialog"));
     }
   });
 }
@@ -2084,7 +2121,7 @@ async function deleteWorkout(id) {
   if (id && await showConfirm("确定删除这次训练？", { title: "删除训练", confirmText: "删除", danger: true })) {
     await remove("workouts", id);
     if (state.cloudReady) await enqueueSync("workout", "delete", { id });
-    if ($("#workoutDialog").open) $("#workoutDialog").close();
+    if ($("#workoutDialog").open) closeModal($("#workoutDialog"));
     await loadData();
   }
 }
@@ -2093,7 +2130,7 @@ async function deleteBodyMeasurement(id) {
   if (id && await showConfirm("确定删除这条身体数据？", { title: "删除身体数据", confirmText: "删除", danger: true })) {
     await remove("measurements", id);
     if (state.cloudReady) await enqueueSync("measurement", "delete", { id });
-    if ($("#bodyDialog").open) $("#bodyDialog").close();
+    if ($("#bodyDialog").open) closeModal($("#bodyDialog"));
     await loadData();
   }
 }
@@ -2211,7 +2248,7 @@ function setupBackup() {
       ...(payload.sleepEntries || payload.sleep || []).map((item) => put("sleep", item)),
     ]);
     if (hasCloud() && await showConfirm("是否同时上传导入的数据到云端？", { title: "上传到云端" })) await uploadLocalDataToCloud();
-    $("#backupDialog").close();
+    closeModal($("#backupDialog"));
     if (hasCloud()) await loadCloudData();
     else await loadData();
   });
