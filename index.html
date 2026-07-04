@@ -40,6 +40,10 @@
               <span>+</span>
               上传照片
             </button>
+            <button class="quick-action" data-open="sleepDialog" type="button">
+              <span>+</span>
+              状态记录
+            </button>
           </div>
 
           <div class="stats-grid">
@@ -52,6 +56,11 @@
               <span>最新腰围</span>
               <strong id="latestWaist">--</strong>
               <small id="waistDelta">暂无变化</small>
+            </article>
+            <article class="metric">
+              <span>下午状态</span>
+              <strong id="latestAfternoonState">--</strong>
+              <small id="sleepImpactNote">暂无记录</small>
             </article>
           </div>
 
@@ -127,6 +136,14 @@
           </div>
           <div id="photoGrid" class="photo-grid"></div>
         </section>
+
+        <section class="view" id="view-sleep" aria-labelledby="sleepTitle">
+          <div class="section-title sticky-title">
+            <h2 id="sleepTitle">状态</h2>
+            <button class="primary-button" data-open="sleepDialog" type="button">新增</button>
+          </div>
+          <div id="sleepList" class="timeline"></div>
+        </section>
       </main>
 
       <nav class="bottom-nav" aria-label="主导航">
@@ -134,6 +151,7 @@
         <button data-nav="workouts" type="button">训练</button>
         <button data-nav="body" type="button">身体</button>
         <button data-nav="photos" type="button">照片</button>
+        <button data-nav="sleep" type="button">状态</button>
       </nav>
     </div>
 
@@ -210,6 +228,98 @@
         <div class="dialog-actions">
           <button class="danger-button hidden" id="deleteBodyButton" type="button">删除</button>
           <button class="secondary-button" type="button" data-close="bodyDialog">取消</button>
+          <button class="primary-button" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="sleepDialog">
+      <form method="dialog" class="dialog-card" id="sleepForm">
+        <div class="dialog-head">
+          <h2 id="sleepDialogTitle">状态记录</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="sleepDialog" aria-label="关闭">×</button>
+        </div>
+        <input type="hidden" id="sleepId" />
+        <label>日期<input id="sleepDate" type="date" required /></label>
+        <div class="field-row">
+          <label>昨晚睡眠评分
+            <select id="sleepScore">
+              <option value="">未填写</option>
+              <option value="1">1 很差</option>
+              <option value="2">2 偏差</option>
+              <option value="3">3 一般</option>
+              <option value="4">4 不错</option>
+              <option value="5">5 很好</option>
+            </select>
+          </label>
+          <label>醒来感觉
+            <select id="wakeFeeling">
+              <option value="">未填写</option>
+              <option value="tired">很累</option>
+              <option value="okay">还行</option>
+              <option value="clear">清醒</option>
+            </select>
+          </label>
+        </div>
+        <fieldset>
+          <legend>昨晚睡眠问题</legend>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="sleepIssues" value="入睡困难" />入睡困难</label>
+            <label><input type="checkbox" name="sleepIssues" value="夜醒" />夜醒</label>
+            <label><input type="checkbox" name="sleepIssues" value="早醒" />早醒</label>
+            <label><input type="checkbox" name="sleepIssues" value="多梦" />多梦</label>
+          </div>
+        </fieldset>
+        <div class="field-row">
+          <label>下午状态评分
+            <select id="afternoonScore">
+              <option value="">未填写</option>
+              <option value="1">1 很难受</option>
+              <option value="2">2 偏差</option>
+              <option value="3">3 一般</option>
+              <option value="4">4 还不错</option>
+              <option value="5">5 很好</option>
+            </select>
+          </label>
+          <label>严重程度
+            <select id="severity">
+              <option value="">未填写</option>
+              <option value="mild">轻</option>
+              <option value="medium">中</option>
+              <option value="heavy">重</option>
+            </select>
+          </label>
+        </div>
+        <label>发生时间<input id="impactWindow" type="text" placeholder="例如 13:00-17:00" /></label>
+        <fieldset>
+          <legend>难受类型</legend>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="symptoms" value="困" />困</label>
+            <label><input type="checkbox" name="symptoms" value="头昏" />头昏</label>
+            <label><input type="checkbox" name="symptoms" value="低能量" />低能量</label>
+            <label><input type="checkbox" name="symptoms" value="注意力差" />注意力差</label>
+            <label><input type="checkbox" name="symptoms" value="焦虑" />焦虑</label>
+            <label><input type="checkbox" name="symptoms" value="身体疲劳" />身体疲劳</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>可能诱因</legend>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="factors" value="咖啡因晚" />咖啡因晚</label>
+            <label><input type="checkbox" name="factors" value="晚上训练" />晚上训练</label>
+            <label><input type="checkbox" name="factors" value="饮酒" />饮酒</label>
+            <label><input type="checkbox" name="factors" value="晚餐晚/多" />晚餐晚/多</label>
+            <label><input type="checkbox" name="factors" value="睡前屏幕" />睡前屏幕</label>
+            <label><input type="checkbox" name="factors" value="压力" />压力</label>
+            <label><input type="checkbox" name="factors" value="鼻塞/生病" />鼻塞/生病</label>
+            <label><input type="checkbox" name="factors" value="温度不适" />温度不适</label>
+          </div>
+        </fieldset>
+        <label>备注<textarea id="sleepNotes" rows="3" placeholder="比如下午什么时候开始难受、怎么缓解、是否影响训练或工作"></textarea></label>
+        <p class="record-meta hidden" id="sleepMeta"></p>
+        <div class="dialog-actions">
+          <button class="danger-button hidden" id="deleteSleepButton" type="button">删除</button>
+          <button class="secondary-button" type="button" data-close="sleepDialog">取消</button>
           <button class="primary-button" type="submit">保存</button>
         </div>
       </form>

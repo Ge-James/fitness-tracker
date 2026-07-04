@@ -40,6 +40,23 @@ create table if not exists public.progress_photos (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.sleep_records (
+  id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date date not null,
+  sleep_score numeric,
+  wake_feeling text,
+  sleep_issues jsonb not null default '[]'::jsonb,
+  afternoon_score numeric,
+  severity text,
+  impact_window text,
+  symptoms jsonb not null default '[]'::jsonb,
+  factors jsonb not null default '[]'::jsonb,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.progress_photos
 add column if not exists captured_at timestamptz;
 
@@ -50,6 +67,7 @@ on conflict (id) do nothing;
 alter table public.workouts enable row level security;
 alter table public.body_measurements enable row level security;
 alter table public.progress_photos enable row level security;
+alter table public.sleep_records enable row level security;
 
 create policy "workouts are owned by user"
 on public.workouts
@@ -65,6 +83,12 @@ with check (auth.uid() = user_id);
 
 create policy "progress photos are owned by user"
 on public.progress_photos
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "sleep records are owned by user"
+on public.sleep_records
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);

@@ -1,12 +1,13 @@
 const DB_NAME = "fitness-tracker-db";
-const DB_VERSION = 3;
-const STORES = ["workouts", "measurements", "photos", "syncQueue", "templates"];
+const DB_VERSION = 4;
+const STORES = ["workouts", "measurements", "photos", "sleep", "syncQueue", "templates"];
 const state = {
   db: null,
   workouts: [],
   templates: [],
   measurements: [],
   photos: [],
+  sleepEntries: [],
   homeRange: "30",
   bodyRange: "30",
   draftPhotoData: "",
@@ -198,16 +199,18 @@ async function replaceStore(storeName, items) {
 }
 
 async function loadData() {
-  const [workouts, templates, measurements, photos] = await Promise.all([
+  const [workouts, templates, measurements, photos, sleepEntries] = await Promise.all([
     getAll("workouts"),
     getAll("templates"),
     getAll("measurements"),
     getAll("photos"),
+    getAll("sleep"),
   ]);
   state.workouts = workouts.sort((a, b) => b.date.localeCompare(a.date));
   state.templates = templates.sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
   state.measurements = measurements.sort((a, b) => b.date.localeCompare(a.date));
   state.photos = photos.sort((a, b) => b.date.localeCompare(a.date));
+  state.sleepEntries = sleepEntries.sort((a, b) => b.date.localeCompare(a.date));
   render();
 }
 
@@ -240,6 +243,7 @@ async function applySyncJob(job) {
   if (job.type === "workout" && job.action === "upsert") await saveWorkoutCloud(job.payload);
   if (job.type === "measurement" && job.action === "upsert") await saveMeasurementCloud(job.payload);
   if (job.type === "photo" && job.action === "upsert") await savePhotoCloud(job.payload);
+  if (job.type === "sleep" && job.action === "upsert") await saveSleepCloud(job.payload);
   if (job.type === "workout" && job.action === "delete") {
     const result = await state.supabase.from("workouts").delete().eq("id", job.recordId);
     if (result.error) throw result.error;
@@ -255,6 +259,10 @@ async function applySyncJob(job) {
       const storageResult = await state.supabase.storage.from("progress-photos").remove([job.payload.imagePath]);
       if (storageResult.error) throw storageResult.error;
     }
+  }
+  if (job.type === "sleep" && job.action === "delete") {
+    const result = await state.supabase.from("sleep_records").delete().eq("id", job.recordId);
+    if (result.error) throw result.error;
   }
 }
 
@@ -305,10 +313,11 @@ async function loadCloudData() {
   await processSyncQueue();
   if (state.pendingSyncCount) return;
   setSyncStatus("syncing", "正在同步");
-  const [workoutsResult, bodyResult, photosResult] = await Promise.all([
+  const [workoutsResult, bodyResult, photosResult, sleepResult] = await Promise.all([
     state.supabase.from("workouts").select("*").order("date", { ascending: false }),
     state.supabase.from("body_measurements").select("*").order("date", { ascending: false }),
     state.supabase.from("progress_photos").select("*").order("date", { ascending: false }),
+    state.supabase.from("sleep_records").select("*").order("date", { ascending: false }),
   ]);
   if (workoutsResult.error || bodyResult.error || photosResult.error) {
     setSyncStatus("error", "同步失败");
@@ -318,10 +327,12 @@ async function loadCloudData() {
   state.workouts = workoutsResult.data.map(fromWorkoutRow);
   state.measurements = bodyResult.data.map(fromMeasurementRow);
   state.photos = await Promise.all(photosResult.data.map(fromPhotoRow));
+  if (!sleepResult.error) state.sleepEntries = sleepResult.data.map(fromSleepRow);
   await Promise.all([
     replaceStore("workouts", state.workouts),
     replaceStore("measurements", state.measurements),
     replaceStore("photos", state.photos),
+    ...(sleepResult.error ? [] : [replaceStore("sleep", state.sleepEntries)]),
   ]);
   render();
   setSyncStatus("synced", "已同步");
@@ -408,6 +419,7 @@ function render() {
   renderExerciseHistoryList();
   renderMeasurements();
   renderPhotos();
+  renderSleep();
   renderTemplateOptions();
   drawCharts();
 }
@@ -566,6 +578,43 @@ function fromMeasurementRow(row) {
   };
 }
 
+function toSleepRow(item) {
+  return {
+    id: item.id,
+    user_id: state.user.id,
+    date: item.date,
+    sleep_score: item.sleepScore ?? null,
+    wake_feeling: item.wakeFeeling || null,
+    sleep_issues: item.sleepIssues || [],
+    afternoon_score: item.afternoonScore ?? null,
+    severity: item.severity || null,
+    impact_window: item.impactWindow || null,
+    symptoms: item.symptoms || [],
+    factors: item.factors || [],
+    notes: item.notes || null,
+    created_at: item.createdAt || new Date().toISOString(),
+    updated_at: item.updatedAt || new Date().toISOString(),
+  };
+}
+
+function fromSleepRow(row) {
+  return {
+    id: row.id,
+    date: row.date,
+    sleepScore: row.sleep_score ?? undefined,
+    wakeFeeling: row.wake_feeling || "",
+    sleepIssues: row.sleep_issues || [],
+    afternoonScore: row.afternoon_score ?? undefined,
+    severity: row.severity || "",
+    impactWindow: row.impact_window || "",
+    symptoms: row.symptoms || [],
+    factors: row.factors || [],
+    notes: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 async function toPhotoRow(item) {
   const imagePath = item.imagePath || await uploadPhotoToCloud(item);
   return {
@@ -634,6 +683,12 @@ function renderHome() {
   $("#latestWaist").textContent = latest?.waist ? `${latest.waist} cm` : "--";
   $("#weightDelta").textContent = deltaText(latest?.weight, previous?.weight, "kg");
   $("#waistDelta").textContent = deltaText(latest?.waist, previous?.waist, "cm");
+
+  const latestSleep = state.sleepEntries[0];
+  $("#latestAfternoonState").textContent = latestSleep?.afternoonScore ? `${latestSleep.afternoonScore}/5` : "--";
+  $("#sleepImpactNote").textContent = latestSleep
+    ? summarizeSleepImpact(latestSleep)
+    : "暂无记录";
 
   const recent = state.workouts[0];
   const target = $("#recentWorkout");
@@ -933,6 +988,60 @@ function renderPhotos() {
       </section>
     `;
   }).join("");
+}
+
+function renderSleep() {
+  const list = $("#sleepList");
+  if (!list) return;
+  if (!state.sleepEntries.length) {
+    list.innerHTML = `<div class="empty-state">记录一次状态后，这里会显示历史</div>`;
+    return;
+  }
+  list.innerHTML = state.sleepEntries.map((item) => `
+    <article class="timeline-item">
+      <div class="timeline-title">
+        <div>
+          <strong>${formatDate(item.date)}</strong>
+          <span class="timeline-meta">${summarizeSleepImpact(item)}</span>
+        </div>
+        <div class="item-actions">
+          <button class="text-button" type="button" data-edit-sleep="${item.id}">编辑</button>
+          <button class="danger-link" type="button" data-delete-sleep="${item.id}">删除</button>
+        </div>
+      </div>
+      <div class="chip-row">
+        ${item.sleepScore ? `<span class="chip">睡眠 ${item.sleepScore}/5</span>` : ""}
+        ${item.afternoonScore ? `<span class="chip">下午 ${item.afternoonScore}/5</span>` : ""}
+        ${item.severity ? `<span class="chip">${severityLabel(item.severity)}</span>` : ""}
+        ${(item.symptoms || []).slice(0, 4).map((value) => `<span class="chip">${escapeHtml(value)}</span>`).join("")}
+      </div>
+      ${(item.factors || []).length ? `
+        <div class="chip-row">
+          ${(item.factors || []).slice(0, 5).map((value) => `<span class="chip">诱因 ${escapeHtml(value)}</span>`).join("")}
+        </div>
+      ` : ""}
+      ${item.impactWindow ? `<p class="muted">发生时间：${escapeHtml(item.impactWindow)}</p>` : ""}
+      ${(item.sleepIssues || []).length ? `<p class="muted">睡眠问题：${escapeHtml(item.sleepIssues.join("、"))}</p>` : ""}
+      ${item.wakeFeeling ? `<p class="muted">醒来感觉：${wakeFeelingLabel(item.wakeFeeling)}</p>` : ""}
+      ${item.notes ? `<p class="muted">${escapeHtml(item.notes)}</p>` : ""}
+    </article>
+  `).join("");
+}
+
+function summarizeSleepImpact(item) {
+  const parts = [];
+  if (item.symptoms?.length) parts.push(item.symptoms.slice(0, 2).join("、"));
+  if (item.afternoonScore) parts.push(`下午 ${item.afternoonScore}/5`);
+  if (item.severity) parts.push(severityLabel(item.severity));
+  return parts.join(" · ") || "状态记录";
+}
+
+function severityLabel(value) {
+  return { mild: "轻", medium: "中", heavy: "重" }[value] || value;
+}
+
+function wakeFeelingLabel(value) {
+  return { tired: "很累", okay: "还行", clear: "清醒" }[value] || value;
 }
 
 function groupPhotosByDate(photos) {
@@ -1326,6 +1435,7 @@ function openCreateDialog(id) {
   if (id === "workoutDialog") resetWorkoutForm();
   if (id === "bodyDialog") resetBodyForm();
   if (id === "photoDialog") resetPhotoForm();
+  if (id === "sleepDialog") resetSleepForm();
   $(`#${id}`).showModal();
 }
 
@@ -1678,6 +1788,74 @@ async function saveBody(event) {
   await loadData();
 }
 
+function checkboxValues(name, root = document) {
+  return $$(`input[name="${name}"]:checked`, root).map((input) => input.value);
+}
+
+function setCheckboxValues(name, values = [], root = document) {
+  $$(`input[name="${name}"]`, root).forEach((input) => {
+    input.checked = values.includes(input.value);
+  });
+}
+
+function resetSleepForm(item) {
+  $("#sleepDialogTitle").textContent = item ? "编辑状态记录" : "状态记录";
+  $("#sleepId").value = item?.id || "";
+  $("#sleepDate").value = item?.date || today();
+  $("#sleepScore").value = item?.sleepScore || "";
+  $("#wakeFeeling").value = item?.wakeFeeling || "";
+  $("#afternoonScore").value = item?.afternoonScore || "";
+  $("#severity").value = item?.severity || "";
+  $("#impactWindow").value = item?.impactWindow || "";
+  $("#sleepNotes").value = item?.notes || "";
+  setCheckboxValues("sleepIssues", item?.sleepIssues || [], $("#sleepDialog"));
+  setCheckboxValues("symptoms", item?.symptoms || [], $("#sleepDialog"));
+  setCheckboxValues("factors", item?.factors || [], $("#sleepDialog"));
+  renderRecordMeta("#sleepMeta", item);
+  $("#deleteSleepButton").classList.toggle("hidden", !item);
+}
+
+function setupSleepForm() {
+  $("#sleepForm").addEventListener("submit", saveSleep);
+  $("#deleteSleepButton").addEventListener("click", async () => {
+    await deleteSleepRecord($("#sleepId").value);
+  });
+}
+
+async function saveSleep(event) {
+  event.preventDefault();
+  const now = new Date().toISOString();
+  const existing = state.sleepEntries.find((item) => item.id === $("#sleepId").value);
+  const entry = {
+    id: existing?.id || uid(),
+    date: $("#sleepDate").value,
+    sleepScore: num($("#sleepScore").value),
+    wakeFeeling: $("#wakeFeeling").value,
+    sleepIssues: checkboxValues("sleepIssues", $("#sleepDialog")),
+    afternoonScore: num($("#afternoonScore").value),
+    severity: $("#severity").value,
+    impactWindow: $("#impactWindow").value.trim(),
+    symptoms: checkboxValues("symptoms", $("#sleepDialog")),
+    factors: checkboxValues("factors", $("#sleepDialog")),
+    notes: $("#sleepNotes").value.trim(),
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
+  await put("sleep", entry);
+  if (state.cloudReady) await enqueueSync("sleep", "upsert", entry);
+  $("#sleepDialog").close();
+  await loadData();
+}
+
+async function deleteSleepRecord(id) {
+  if (id && await showConfirm("确定删除这条状态记录？", { title: "删除状态记录", confirmText: "删除", danger: true })) {
+    await remove("sleep", id);
+    if (state.cloudReady) await enqueueSync("sleep", "delete", { id });
+    if ($("#sleepDialog").open) $("#sleepDialog").close();
+    await loadData();
+  }
+}
+
 function resetPhotoForm(photo) {
   $("#photoId").value = photo?.id || "";
   $("#photoDate").value = photo?.date || today();
@@ -1846,6 +2024,8 @@ function setupEditHandlers() {
     const workoutButton = event.target.closest("[data-edit-workout]");
     const bodyButton = event.target.closest("[data-edit-body]");
     const photoButton = event.target.closest("[data-edit-photo]");
+    const sleepButton = event.target.closest("[data-edit-sleep]");
+    const deleteSleepButton = event.target.closest("[data-delete-sleep]");
     if (deleteWorkoutButton) {
       event.stopPropagation();
       deleteWorkout(deleteWorkoutButton.dataset.deleteWorkout);
@@ -1854,6 +2034,11 @@ function setupEditHandlers() {
     if (deleteBodyButton) {
       event.stopPropagation();
       deleteBodyMeasurement(deleteBodyButton.dataset.deleteBody);
+      return;
+    }
+    if (deleteSleepButton) {
+      event.stopPropagation();
+      deleteSleepRecord(deleteSleepButton.dataset.deleteSleep);
       return;
     }
     if (copyWorkoutButton) {
@@ -1887,6 +2072,10 @@ function setupEditHandlers() {
     if (photoButton) {
       resetPhotoForm(state.photos.find((item) => item.id === photoButton.dataset.editPhoto));
       $("#photoDialog").showModal();
+    }
+    if (sleepButton) {
+      resetSleepForm(state.sleepEntries.find((item) => item.id === sleepButton.dataset.editSleep));
+      $("#sleepDialog").showModal();
     }
   });
 }
@@ -1929,6 +2118,16 @@ async function saveMeasurementCloud(measurement) {
   setSyncStatus("synced", "已同步");
 }
 
+async function saveSleepCloud(entry) {
+  setSyncStatus("syncing", "正在同步");
+  const { error } = await state.supabase.from("sleep_records").upsert(toSleepRow(entry));
+  if (error) {
+    setSyncStatus("error", "同步失败");
+    throw error;
+  }
+  setSyncStatus("synced", "已同步");
+}
+
 async function savePhotoCloud(photo) {
   setSyncStatus("syncing", "正在同步");
   const row = await toPhotoRow(photo);
@@ -1954,16 +2153,18 @@ async function savePhotoCloud(photo) {
 
 async function uploadLocalDataToCloud() {
   if (!hasCloud()) return;
-  const [workouts, measurements, photos] = await Promise.all([
+  const [workouts, measurements, photos, sleepEntries] = await Promise.all([
     getAll("workouts"),
     getAll("measurements"),
     getAll("photos"),
+    getAll("sleep"),
   ]);
   try {
     setSyncStatus("syncing", "正在同步");
     for (const workout of workouts) await saveWorkoutCloud(workout);
     for (const measurement of measurements) await saveMeasurementCloud(measurement);
     for (const photo of photos) await savePhotoCloud(photo);
+    for (const entry of sleepEntries) await saveSleepCloud(entry);
     await showMessage("本地数据已上传到云端");
     await loadCloudData();
   } catch (error) {
@@ -1981,6 +2182,7 @@ function setupBackup() {
       templates: state.templates,
       measurements: state.measurements,
       photos: state.photos,
+      sleepEntries: state.sleepEntries,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
@@ -2006,6 +2208,7 @@ function setupBackup() {
       ...(payload.templates || []).map((item) => put("templates", item)),
       ...payload.measurements.map((item) => put("measurements", item)),
       ...payload.photos.map((item) => put("photos", item)),
+      ...(payload.sleepEntries || payload.sleep || []).map((item) => put("sleep", item)),
     ]);
     if (hasCloud() && await showConfirm("是否同时上传导入的数据到云端？", { title: "上传到云端" })) await uploadLocalDataToCloud();
     $("#backupDialog").close();
@@ -2040,6 +2243,7 @@ async function init() {
   setupAuth();
   setupWorkoutForm();
   setupBodyForm();
+  setupSleepForm();
   setupPhotoForm();
   setupEditHandlers();
   setupBackup();
