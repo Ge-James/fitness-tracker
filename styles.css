@@ -895,6 +895,19 @@ details label {
   flex-wrap: wrap;
 }
 
+.exercise-card-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.exercise-card-tools .text-button {
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
 .exercise-insight {
   padding: 8px 10px;
   border-radius: 8px;

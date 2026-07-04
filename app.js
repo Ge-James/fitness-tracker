@@ -1754,6 +1754,10 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
   card.className = "exercise-card";
   card.dataset.exerciseId = exercise.id || uid();
   card.innerHTML = `
+    <div class="exercise-card-tools">
+      <button class="text-button exercise-history-button" type="button">历史</button>
+      <button class="text-button copy-exercise" type="button">复制</button>
+    </div>
     <div class="field-row">
       <label class="exercise-name-field">动作名称
         <input class="exercise-name" type="text" value="${escapeAttr(exercise.name || "")}" placeholder="例如 卧推" autocomplete="off" required />
@@ -1772,8 +1776,6 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
     <label>动作备注<input class="exercise-notes" type="text" value="${escapeAttr(exercise.notes || "")}" /></label>
     <div class="dialog-actions">
       <button class="danger-button remove-exercise" type="button">删除动作</button>
-      <button class="text-button exercise-history-button" type="button">历史</button>
-      <button class="text-button copy-exercise" type="button">复制</button>
       <button class="secondary-button add-set" type="button">添加变化</button>
     </div>
   `;
