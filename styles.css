@@ -1203,9 +1203,35 @@ details label {
     grid-column: 1 / -1;
   }
 
-  .exercise-history-list,
-  .history-stats {
+  .exercise-history-list {
     grid-template-columns: 1fr;
+  }
+
+  .history-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .history-stats article {
+    min-width: 0;
+    padding: 8px 6px;
+  }
+
+  .history-stats span {
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .history-stats strong {
+    margin-top: 3px;
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .exercise-set-row {
