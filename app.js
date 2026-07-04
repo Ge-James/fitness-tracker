@@ -943,11 +943,11 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
     <label>动作备注<input class="exercise-notes" type="text" value="${escapeAttr(exercise.notes || "")}" /></label>
     <div class="dialog-actions">
       <button class="danger-button remove-exercise" type="button">删除动作</button>
-      <button class="secondary-button add-set" type="button">添加组</button>
+      <button class="secondary-button add-set" type="button">添加变化</button>
     </div>
   `;
   $(".exercise-type", card).value = exercise.type === "timed" ? "cardio" : exercise.type || "strength";
-  (exercise.sets?.length ? exercise.sets : [{ id: uid() }]).forEach((set, index) => addSetEditor(card, set, index));
+  getExerciseSetRows(exercise).forEach((set, index) => addSetEditor(card, set, index));
   if (atTop) $("#exerciseEditor").prepend(card);
   else $("#exerciseEditor").appendChild(card);
 }
@@ -962,10 +962,28 @@ function addSetEditor(card, set = {}, index) {
     <span class="set-number">${index === undefined ? $(".exercise-set-row", card).parentElement?.children.length + 1 || "" : index + 1}</span>
     <label>重量 lb<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${values.weight || ""}" /></label>
     <label>次数<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${values.reps || ""}" /></label>
+    <label>组数<input class="set-count" type="number" step="1" min="1" inputmode="numeric" value="${values.count || 1}" /></label>
     <button class="icon-button remove-set" type="button" aria-label="删除组">×</button>
   `;
   $(".exercise-sets", card).appendChild(row);
   refreshSetNumbers(card);
+}
+
+function getExerciseSetRows(exercise) {
+  const sets = exercise.sets?.length ? exercise.sets : [{ id: uid() }];
+  if (sets.length === 1 && exercise.setCount && (sets[0].weight || sets[0].reps)) {
+    return [{ ...sets[0], count: exercise.setCount }];
+  }
+  const grouped = [];
+  sets.forEach((set) => {
+    const last = grouped[grouped.length - 1];
+    if (last && last.weight === set.weight && last.reps === set.reps) {
+      last.count += 1;
+    } else {
+      grouped.push({ ...set, count: 1 });
+    }
+  });
+  return grouped;
 }
 
 function getLastSetValues(card) {
@@ -975,6 +993,7 @@ function getLastSetValues(card) {
   return {
     weight: $(".set-weight", last)?.value || "",
     reps: $(".set-reps", last)?.value || "",
+    count: $(".set-count", last)?.value || 1,
   };
 }
 
@@ -1007,11 +1026,17 @@ async function saveWorkout(event) {
   const exercises = $$(".exercise-card").map((card) => {
     const type = $(".exercise-type", card).value;
     const notes = $(".exercise-notes", card)?.value.trim() || "";
-    const sets = $$(".exercise-set-row", card).map((row) => ({
-      id: row.dataset.setId || uid(),
-      weight: num($(".set-weight", row)?.value),
-      reps: num($(".set-reps", row)?.value),
-    })).filter((set) => set.weight || set.reps);
+    const sets = $$(".exercise-set-row", card).flatMap((row) => {
+      const weight = num($(".set-weight", row)?.value);
+      const reps = num($(".set-reps", row)?.value);
+      const count = Math.max(1, Math.floor(num($(".set-count", row)?.value) || 1));
+      if (!weight && !reps) return [];
+      return Array.from({ length: count }, () => ({
+        id: uid(),
+        weight,
+        reps,
+      }));
+    });
     return {
       id: card.dataset.exerciseId || uid(),
       name: $(".exercise-name", card).value.trim(),

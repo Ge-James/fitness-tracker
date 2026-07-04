@@ -565,7 +565,7 @@ details label {
 
 .exercise-set-row {
   display: grid;
-  grid-template-columns: 28px repeat(2, minmax(0, 1fr)) 42px;
+  grid-template-columns: 28px repeat(3, minmax(0, 1fr)) 42px;
   gap: 8px;
   align-items: end;
 }
