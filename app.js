@@ -32,6 +32,15 @@ const RANGE_LABELS = {
   all: "All time",
 };
 
+const AVATAR_VARIANTS = [
+  "leaf",
+  "sunrise",
+  "steel",
+  "berry",
+  "mint",
+  "ember",
+];
+
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
@@ -433,7 +442,10 @@ function setupAuth() {
 
 function updateAuthUi() {
   const label = state.user?.email || (state.cloudReady ? "登录" : "未配置");
-  $("#authButton").textContent = label;
+  const authButton = $("#authButton");
+  authButton.innerHTML = renderAvatar(label, Boolean(state.user));
+  authButton.setAttribute("aria-label", state.user ? `账号：${state.user.email}` : label);
+  authButton.title = state.user ? state.user.email : label;
   $("#authStatus").textContent = state.user
     ? `已登录：${state.user.email}`
     : state.cloudReady
@@ -443,6 +455,31 @@ function updateAuthUi() {
   $("#uploadCloudButton")?.classList.toggle("hidden", !state.user);
   $("#refreshCloudButton")?.classList.toggle("hidden", !state.user);
   markSyncReady();
+}
+
+function renderAvatar(label, isSignedIn) {
+  const seed = String(label || "guest");
+  const variant = isSignedIn ? hashString(seed) % AVATAR_VARIANTS.length : 0;
+  const initial = getAvatarInitial(seed, isSignedIn);
+  return `
+    <span class="avatar-mark avatar-${AVATAR_VARIANTS[variant]}" aria-hidden="true">
+      <span>${escapeHtml(initial)}</span>
+    </span>
+    <span class="sr-only">${escapeHtml(label)}</span>
+  `;
+}
+
+function getAvatarInitial(seed, isSignedIn) {
+  if (!isSignedIn) return "登";
+  const local = seed.split("@")[0] || seed;
+  const match = local.match(/[a-z0-9]/i);
+  return (match?.[0] || "我").toUpperCase();
+}
+
+function hashString(value) {
+  return Array.from(value).reduce((hash, char) => {
+    return ((hash << 5) - hash + char.charCodeAt(0)) >>> 0;
+  }, 0);
 }
 
 function render() {

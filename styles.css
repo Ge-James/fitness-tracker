@@ -83,6 +83,97 @@ button {
   white-space: nowrap;
 }
 
+.sync-pill.avatar-button {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border-color: rgba(31, 111, 91, 0.16);
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(24, 41, 33, 0.08);
+}
+
+.avatar-mark {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.avatar-mark span {
+  position: relative;
+  z-index: 1;
+}
+
+.avatar-mark::before,
+.avatar-mark::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.avatar-mark::before {
+  width: 24px;
+  height: 24px;
+  right: -8px;
+  top: -6px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.avatar-mark::after {
+  width: 18px;
+  height: 18px;
+  left: -5px;
+  bottom: -3px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.avatar-leaf {
+  background: linear-gradient(135deg, #1f6f5b, #7ec8a5);
+}
+
+.avatar-sunrise {
+  background: linear-gradient(135deg, #d66b43, #f2b66d);
+}
+
+.avatar-steel {
+  background: linear-gradient(135deg, #43526f, #8aa0b8);
+}
+
+.avatar-berry {
+  background: linear-gradient(135deg, #7d4c82, #d389a9);
+}
+
+.avatar-mint {
+  background: linear-gradient(135deg, #21817a, #9bd8d0);
+}
+
+.avatar-ember {
+  background: linear-gradient(135deg, #8f5634, #e29b65);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .sync-status {
   min-height: 30px;
   max-width: 88px;
