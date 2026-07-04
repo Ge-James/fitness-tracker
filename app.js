@@ -846,8 +846,8 @@ function renderHome() {
   const previous = state.measurements[1];
   $("#latestWeight").textContent = latest?.weight ? `${latest.weight} kg` : "--";
   $("#latestWaist").textContent = latest?.waist ? `${latest.waist} cm` : "--";
-  $("#weightDelta").textContent = deltaText(latest?.weight, previous?.weight, "kg");
-  $("#waistDelta").textContent = deltaText(latest?.waist, previous?.waist, "cm");
+  $("#weightDelta").textContent = latest?.date ? formatDate(latest.date) : "暂无记录";
+  $("#waistDelta").textContent = latest?.date ? formatDate(latest.date) : "暂无记录";
 
   const latestSleep = state.sleepEntries[0];
   $("#latestAfternoonState").textContent = latestSleep?.afternoonScore ? `${latestSleep.afternoonScore}/5` : "--";
