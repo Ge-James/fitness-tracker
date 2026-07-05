@@ -621,7 +621,6 @@ function applyExerciseSuggestion(input, exercise) {
   const card = input.closest(".exercise-card");
   const type = $(".exercise-type", card);
   if (type) type.value = match.type;
-  renderExerciseInsight(card);
   hideExerciseSuggestions(card);
 }
 
@@ -1862,10 +1861,6 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
   card.className = "exercise-card";
   card.dataset.exerciseId = exercise.id || uid();
   card.innerHTML = `
-    <div class="exercise-card-tools">
-      <button class="secondary-button exercise-history-button" type="button">查看历史</button>
-      <button class="secondary-button copy-exercise" type="button">复制动作</button>
-    </div>
     <div class="field-row">
       <label class="exercise-name-field">动作名称
         <input class="exercise-name" type="text" value="${escapeAttr(exercise.name || "")}" placeholder="例如 卧推" autocomplete="off" required />
@@ -1879,7 +1874,6 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
         </select>
       </label>
     </div>
-    <p class="exercise-insight hidden"></p>
     <div class="exercise-sets"></div>
     <label>动作备注<input class="exercise-notes" type="text" value="${escapeAttr(exercise.notes || "")}" /></label>
     <div class="dialog-actions">
@@ -1888,60 +1882,9 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
     </div>
   `;
   $(".exercise-type", card).value = exercise.type === "timed" ? "cardio" : exercise.type || "strength";
-  renderExerciseInsight(card);
   getExerciseSetRows(exercise).forEach((set, index) => addSetEditor(card, set, index));
   if (atTop) $("#exerciseEditor").prepend(card);
   else $("#exerciseEditor").appendChild(card);
-}
-
-function renderExerciseInsight(card) {
-  const target = $(".exercise-insight", card);
-  if (!target) return;
-  const name = $(".exercise-name", card)?.value.trim();
-  const history = name ? getExerciseHistory().find((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase()) : null;
-  if (!history) {
-    target.classList.add("hidden");
-    target.textContent = "";
-    return;
-  }
-  const latest = history.records[0];
-  const latestSummary = latest?.bestSet?.weight
-    ? `最近 ${latest.bestSet.weight} lb × ${latest.bestSet.reps || 0}`
-    : latest?.sets?.length
-      ? `最近 ${latest.sets.length} 组`
-      : "";
-  const bestSummary = history.bestWeight ? `最佳 ${history.bestWeight} lb` : "";
-  target.textContent = [latestSummary, bestSummary].filter(Boolean).join(" · ");
-  target.classList.toggle("hidden", !target.textContent);
-}
-
-function getExerciseFromCard(card) {
-  const sets = $$(".exercise-set-row", card).flatMap((row) => {
-    const weight = $(".set-weight", row)?.value || "";
-    const reps = $(".set-reps", row)?.value || "";
-    const count = Math.max(1, Math.floor(num($(".set-count", row)?.value) || 1));
-    if (!weight && !reps) return [];
-    return Array.from({ length: count }, () => ({
-      id: uid(),
-      weight,
-      reps,
-    }));
-  });
-  return {
-    id: uid(),
-    name: $(".exercise-name", card)?.value.trim() || "",
-    type: $(".exercise-type", card)?.value || "strength",
-    notes: $(".exercise-notes", card)?.value.trim() || "",
-    sets,
-  };
-}
-
-function copyExerciseCard(card) {
-  if (!card) return;
-  const exercise = getExerciseFromCard(card);
-  if (!exercise.name && !exercise.sets.length) return;
-  addExerciseEditor(exercise, true);
-  $("#exerciseEditor").firstElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function addSetEditor(card, set = {}, index) {
@@ -2048,16 +1991,6 @@ function setupWorkoutForm() {
     if (event.target.classList.contains("set-count")) {
       setTimeout(() => event.target.select(), 0);
     }
-    if (event.target.closest(".copy-exercise")) {
-      copyExerciseCard(event.target.closest(".exercise-card"));
-      return;
-    }
-    if (event.target.closest(".exercise-history-button")) {
-      const card = event.target.closest(".exercise-card");
-      const name = $(".exercise-name", card)?.value.trim();
-      if (name) openExerciseHistory(name);
-      return;
-    }
     if (event.target.closest(".remove-set")) {
       const card = event.target.closest(".exercise-card");
       event.target.closest(".exercise-set-row").remove();
@@ -2078,13 +2011,11 @@ function setupWorkoutForm() {
   $("#exerciseEditor").addEventListener("input", (event) => {
     if (event.target.classList.contains("exercise-name")) {
       renderExerciseSuggestions(event.target);
-      renderExerciseInsight(event.target.closest(".exercise-card"));
     }
   });
   $("#exerciseEditor").addEventListener("change", (event) => {
     if (event.target.classList.contains("exercise-name")) {
       applyExerciseSuggestion(event.target);
-      renderExerciseInsight(event.target.closest(".exercise-card"));
     }
   });
   document.addEventListener("click", (event) => {

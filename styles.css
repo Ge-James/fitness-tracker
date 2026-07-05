@@ -943,28 +943,6 @@ details label {
   flex-wrap: wrap;
 }
 
-.exercise-card-tools {
-  display: flex;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.exercise-card-tools .secondary-button {
-  min-height: 32px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-size: 12px;
-}
-
-.exercise-insight {
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .exercise-name-field {
   position: relative;
 }
