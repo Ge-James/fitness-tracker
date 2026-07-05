@@ -2582,7 +2582,16 @@ async function init() {
   markSyncReady();
   await restoreSession();
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    navigator.serviceWorker.register("service-worker.js");
+    let refreshedByNewWorker = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshedByNewWorker) return;
+      refreshedByNewWorker = true;
+      window.location.reload();
+    });
+    navigator.serviceWorker
+      .register("service-worker.js?v=60", { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch((error) => console.warn("Service worker registration failed", error));
   }
   window.addEventListener("resize", drawCharts);
   window.addEventListener("online", () => processSyncQueue());
