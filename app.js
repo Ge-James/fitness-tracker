@@ -2150,7 +2150,7 @@ function setCheckboxValues(name, values = [], root = document) {
 function resetSleepForm(item) {
   $("#sleepDialogTitle").textContent = item ? "编辑状态记录" : "状态记录";
   $("#sleepId").value = item?.id || "";
-  $("#sleepDate").value = item?.date || today();
+  $("#sleepDate").value = item?.date || "";
   $("#sleepScore").value = item?.sleepScore || "";
   $("#wakeFeeling").value = item?.wakeFeeling || "";
   $("#afternoonScore").value = item?.afternoonScore || "";
@@ -2632,7 +2632,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=73", { updateViaCache: "none" })
+      .register("service-worker.js?v=74", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
