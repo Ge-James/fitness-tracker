@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=75" />
+    <link rel="stylesheet" href="styles.css?v=76" />
   </head>
   <body>
     <div class="app-shell">
@@ -285,8 +285,8 @@
           <button class="icon-button" value="cancel" type="button" data-close="sleepDialog" aria-label="关闭">×</button>
         </div>
         <input type="hidden" id="sleepId" />
-        <label>日期<input id="sleepDate" type="date" required /></label>
-        <div class="field-row">
+        <div class="field-row sleep-basics">
+          <label>日期<input id="sleepDate" type="date" required /></label>
           <label>昨晚睡眠评分
             <select id="sleepScore">
               <option value="">未填写</option>
@@ -305,19 +305,6 @@
               <option value="clear">清醒</option>
             </select>
           </label>
-        </div>
-        <fieldset>
-          <legend>昨晚睡眠问题</legend>
-          <div class="checkbox-grid">
-            <label><input type="checkbox" name="sleepIssues" value="入睡困难" />入睡困难</label>
-            <label><input type="checkbox" name="sleepIssues" value="早醒" />早醒</label>
-            <label><input type="checkbox" name="sleepIssues" value="多梦" />多梦</label>
-            <label><input type="checkbox" name="sleepIssues" value="夜醒" />夜醒</label>
-            <label><input type="checkbox" name="sleepIssues" value="睡眠浅" />睡眠浅</label>
-            <label><input type="checkbox" name="sleepIssues" value="打断多" />打断多</label>
-          </div>
-        </fieldset>
-        <div class="field-row">
           <label>下午状态评分
             <select id="afternoonScore">
               <option value="">未填写</option>
@@ -336,8 +323,19 @@
               <option value="heavy">重</option>
             </select>
           </label>
+          <label>发生时间<input id="impactWindow" type="text" placeholder="例如 13:00-17:00" /></label>
         </div>
-        <label>发生时间<input id="impactWindow" type="text" placeholder="例如 13:00-17:00" /></label>
+        <fieldset>
+          <legend>昨晚睡眠问题</legend>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="sleepIssues" value="入睡困难" />入睡困难</label>
+            <label><input type="checkbox" name="sleepIssues" value="早醒" />早醒</label>
+            <label><input type="checkbox" name="sleepIssues" value="多梦" />多梦</label>
+            <label><input type="checkbox" name="sleepIssues" value="夜醒" />夜醒</label>
+            <label><input type="checkbox" name="sleepIssues" value="睡眠浅" />睡眠浅</label>
+            <label><input type="checkbox" name="sleepIssues" value="打断多" />打断多</label>
+          </div>
+        </fieldset>
         <fieldset>
           <legend>难受类型</legend>
           <div class="checkbox-grid">
@@ -450,6 +448,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=75"></script>
+    <script src="app.js?v=76"></script>
   </body>
 </html>
