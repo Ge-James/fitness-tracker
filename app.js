@@ -978,9 +978,12 @@ function renderTemplates() {
     return;
   }
   list.innerHTML = templates.map((template) => `
-    <button class="template-item compact-template" type="button" data-view-template="${template.id}">
-      <strong>${escapeHtml(template.title)}</strong>
-    </button>
+    <article class="template-item compact-template">
+      <button class="compact-template-title" type="button" data-view-template="${template.id}">
+        <strong>${escapeHtml(template.title)}</strong>
+      </button>
+      <button class="text-button" type="button" data-use-template="${template.id}">使用</button>
+    </article>
   `).join("");
 }
 

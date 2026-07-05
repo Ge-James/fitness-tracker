@@ -502,15 +502,27 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   color: var(--text);
   text-align: left;
 }
 
-.compact-template::after {
-  content: "查看";
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 400;
+.compact-template-title {
+  min-height: 32px;
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.compact-template-title strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .library-manager {
