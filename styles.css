@@ -593,6 +593,30 @@ canvas {
   margin-bottom: 8px;
 }
 
+.recent-workout-title {
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.recent-workout-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.recent-workout-main strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-workout-main .timeline-meta {
+  flex: 0 0 auto;
+}
+
 .item-actions {
   display: flex;
   align-items: center;
@@ -622,15 +646,6 @@ canvas {
   color: var(--muted);
   padding: 5px 9px;
   font-size: 12px;
-}
-
-.home-workout-summary {
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.home-workout-summary .chip {
-  padding: 4px 8px;
 }
 
 .empty-state {
@@ -718,6 +733,7 @@ canvas {
 
 .compact-tabs {
   display: grid;
+  gap: 4px;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   overflow: visible;
 }
@@ -1245,13 +1261,15 @@ details label {
   }
 
   .compact-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 3px;
+    padding: 4px;
   }
 
   .compact-tabs button {
     min-height: 34px;
-    padding: 0 6px;
-    font-size: 12px;
+    padding: 0 2px;
+    font-size: 11px;
   }
 
   dialog {

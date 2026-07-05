@@ -880,15 +880,13 @@ function renderHome() {
   const summaryParts = [`${recent.exercises.length} 个动作`, `${setCount} 组`];
   if (recent.durationMinutes) summaryParts.push(`${recent.durationMinutes} 分钟`);
   target.innerHTML = `
-    <div class="timeline-title">
-      <div>
+    <div class="timeline-title recent-workout-title">
+      <div class="recent-workout-main">
         <strong>${escapeHtml(recent.title)}</strong>
         <span class="timeline-meta">${formatDate(recent.date)}</span>
+        <span class="timeline-meta recent-workout-summary">${summaryParts.join(" · ")}</span>
       </div>
       <button class="text-button" type="button" data-edit-workout="${recent.id}">详情</button>
-    </div>
-    <div class="chip-row home-workout-summary">
-      <span class="chip">${summaryParts.join(" · ")}</span>
     </div>
   `;
 }
@@ -2588,7 +2586,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=64", { updateViaCache: "none" })
+      .register("service-worker.js?v=65", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
