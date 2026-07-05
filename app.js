@@ -883,8 +883,10 @@ function renderHome() {
     <div class="timeline-title recent-workout-title">
       <div class="recent-workout-main">
         <strong>${escapeHtml(recent.title)}</strong>
-        <span class="timeline-meta">${formatDate(recent.date)}</span>
-        <span class="timeline-meta recent-workout-summary">${summaryParts.join(" · ")}</span>
+        <div class="recent-workout-meta">
+          <span class="timeline-meta">${formatDate(recent.date)}</span>
+          <span class="recent-workout-summary">${summaryParts.join(" · ")}</span>
+        </div>
       </div>
       <button class="text-button" type="button" data-edit-workout="${recent.id}">详情</button>
     </div>
@@ -2586,7 +2588,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=65", { updateViaCache: "none" })
+      .register("service-worker.js?v=66", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
