@@ -975,14 +975,19 @@ function renderTemplates() {
     list.innerHTML = `<div class="empty-state compact-empty">没有匹配的模板</div>`;
     return;
   }
-  list.innerHTML = templates.map((template) => `
-    <article class="template-item compact-template">
-      <button class="compact-template-title" type="button" data-view-template="${template.id}">
-        <strong>${escapeHtml(template.title)}</strong>
-      </button>
-      <button class="secondary-button template-use-button" type="button" data-use-template="${template.id}">使用模板</button>
-    </article>
-  `).join("");
+  list.innerHTML = templates.map((template) => {
+    const exercises = template.exercises || [];
+    const setCount = exercises.reduce((sum, item) => sum + (item.setCount || item.sets?.length || 0), 0);
+    return `
+      <article class="template-item compact-template">
+        <button class="compact-template-title" type="button" data-view-template="${template.id}">
+          <strong>${escapeHtml(template.title)}</strong>
+          <span class="template-summary">${exercises.length} 个动作 · ${setCount} 组</span>
+        </button>
+        <button class="secondary-button template-use-button" type="button" data-use-template="${template.id}">使用模板</button>
+      </article>
+    `;
+  }).join("");
 }
 
 /*
@@ -2588,7 +2593,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=66", { updateViaCache: "none" })
+      .register("service-worker.js?v=67", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }

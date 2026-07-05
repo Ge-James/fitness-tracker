@@ -529,6 +529,21 @@ canvas {
   white-space: nowrap;
 }
 
+.template-summary {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #eef1ea;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .template-use-button {
   flex: 0 0 auto;
   min-height: 34px;
