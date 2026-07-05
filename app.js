@@ -1863,8 +1863,8 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
   card.dataset.exerciseId = exercise.id || uid();
   card.innerHTML = `
     <div class="exercise-card-tools">
-      <button class="text-button exercise-history-button" type="button">历史</button>
-      <button class="text-button copy-exercise" type="button">复制</button>
+      <button class="secondary-button exercise-history-button" type="button">查看历史</button>
+      <button class="secondary-button copy-exercise" type="button">复制动作</button>
     </div>
     <div class="field-row">
       <label class="exercise-name-field">动作名称

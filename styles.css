@@ -945,15 +945,16 @@ details label {
 
 .exercise-card-tools {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.exercise-card-tools .text-button {
+.exercise-card-tools .secondary-button {
   min-height: 32px;
-  padding: 0 8px;
+  padding: 0 10px;
   border-radius: 8px;
-  background: var(--surface-2);
+  font-size: 12px;
 }
 
 .exercise-insight {
