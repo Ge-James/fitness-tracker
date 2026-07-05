@@ -716,6 +716,17 @@ canvas {
   color: #fff;
 }
 
+.compact-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  overflow: visible;
+}
+
+.compact-tabs button {
+  min-width: 0;
+  padding: 0 8px;
+}
+
 .chart-panel {
   margin-bottom: 14px;
 }
@@ -1231,6 +1242,16 @@ details label {
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .compact-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .compact-tabs button {
+    min-height: 34px;
+    padding: 0 6px;
+    font-size: 12px;
   }
 
   dialog {
