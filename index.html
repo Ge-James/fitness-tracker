@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=54" />
+    <link rel="stylesheet" href="styles.css?v=55" />
   </head>
   <body>
     <div class="app-shell">
@@ -202,6 +202,20 @@
         </div>
         <div class="history-stats" id="exerciseHistoryStats"></div>
         <div class="history-records" id="exerciseHistoryRecords"></div>
+      </div>
+    </dialog>
+
+    <dialog id="templateDetailDialog">
+      <div class="dialog-card">
+        <div class="dialog-head">
+          <h2 id="templateDetailTitle">模板详情</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="templateDetailDialog" aria-label="关闭">×</button>
+        </div>
+        <div class="history-records" id="templateDetailBody"></div>
+        <div class="dialog-actions">
+          <button class="danger-button" id="deleteTemplateDetailButton" type="button">删除</button>
+          <button class="primary-button" id="useTemplateDetailButton" type="button">使用模板</button>
+        </div>
       </div>
     </dialog>
 
@@ -436,6 +450,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=54"></script>
+    <script src="app.js?v=55"></script>
   </body>
 </html>

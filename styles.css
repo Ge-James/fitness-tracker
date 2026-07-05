@@ -496,6 +496,23 @@ canvas {
   background: #fff;
 }
 
+.compact-template {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  text-align: left;
+}
+
+.compact-template::after {
+  content: "查看";
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .library-manager {
   display: grid;
   gap: 16px;

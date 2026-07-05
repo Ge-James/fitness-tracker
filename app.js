@@ -977,10 +977,14 @@ function renderTemplates() {
     list.innerHTML = `<div class="empty-state compact-empty">没有匹配的模板</div>`;
     return;
   }
-  list.innerHTML = templates.map((template) => {
-    const exercises = template.exercises || [];
-    const setCount = exercises.reduce((sum, item) => sum + (item.setCount || item.sets?.length || 0), 0);
-    return `
+  list.innerHTML = templates.map((template) => `
+    <button class="template-item compact-template" type="button" data-view-template="${template.id}">
+      <strong>${escapeHtml(template.title)}</strong>
+    </button>
+  `).join("");
+}
+
+/*
       <article class="template-item">
         <div class="timeline-title">
           <div>
@@ -999,6 +1003,7 @@ function renderTemplates() {
     `;
   }).join("");
 }
+*/
 
 function matchesTemplateSearch(template, query) {
   const text = [
@@ -1787,6 +1792,30 @@ async function openWorkoutFromTemplate(template) {
   if (!$("#workoutDialog").open) openModal($("#workoutDialog"));
 }
 
+function openTemplateDetail(template) {
+  if (!template) return;
+  const exercises = template.exercises || [];
+  $("#templateDetailDialog").dataset.templateId = template.id;
+  $("#templateDetailTitle").textContent = template.title;
+  $("#templateDetailBody").innerHTML = exercises.length
+    ? exercises.map((exercise) => `
+      <article class="history-record">
+        <div class="timeline-title">
+          <div>
+            <strong>${escapeHtml(exercise.name)}</strong>
+            ${exercise.notes ? `<span class="timeline-meta">${escapeHtml(exercise.notes)}</span>` : ""}
+          </div>
+          <span class="chip">${escapeHtml(formatExerciseSummary(exercise))}</span>
+        </div>
+        <div class="chip-row">
+          ${formatSetGroups(exercise.sets || []).map((label) => `<span class="chip">${escapeHtml(label)}</span>`).join("")}
+        </div>
+      </article>
+    `).join("")
+    : `<div class="empty-state compact-empty">这个模板还没有动作。</div>`;
+  openModal($("#templateDetailDialog"));
+}
+
 async function deleteWorkoutTemplate(id) {
   const template = state.templates.find((item) => item.id === id);
   if (!template) return;
@@ -1973,6 +2002,16 @@ function setupWorkoutForm() {
   $("#addExerciseButton").addEventListener("click", () => addExerciseEditor());
   $("#saveTemplateButton").addEventListener("click", saveWorkoutTemplate);
   $("#useTemplateButton").addEventListener("click", useWorkoutTemplate);
+  $("#useTemplateDetailButton")?.addEventListener("click", async () => {
+    const template = state.templates.find((item) => item.id === $("#templateDetailDialog").dataset.templateId);
+    closeModal($("#templateDetailDialog"));
+    await openWorkoutFromTemplate(template);
+  });
+  $("#deleteTemplateDetailButton")?.addEventListener("click", async () => {
+    const id = $("#templateDetailDialog").dataset.templateId;
+    closeModal($("#templateDetailDialog"));
+    await deleteWorkoutTemplate(id);
+  });
   $("#manageExercisesButton")?.addEventListener("click", () => {
     renderExerciseLibraryManager();
     openModal($("#exerciseLibraryDialog"));
@@ -2367,6 +2406,7 @@ function setupEditHandlers() {
     const deleteWorkoutButton = event.target.closest("[data-delete-workout]");
     const deleteBodyButton = event.target.closest("[data-delete-body]");
     const copyWorkoutButton = event.target.closest("[data-copy-workout]");
+    const viewTemplateButton = event.target.closest("[data-view-template]");
     const useTemplateButton = event.target.closest("[data-use-template]");
     const deleteTemplateButton = event.target.closest("[data-delete-template]");
     const exerciseHistoryButton = event.target.closest("[data-exercise-history]");
@@ -2393,6 +2433,11 @@ function setupEditHandlers() {
     if (copyWorkoutButton) {
       event.stopPropagation();
       copyWorkout(state.workouts.find((item) => item.id === copyWorkoutButton.dataset.copyWorkout));
+      return;
+    }
+    if (viewTemplateButton) {
+      event.stopPropagation();
+      openTemplateDetail(state.templates.find((item) => item.id === viewTemplateButton.dataset.viewTemplate));
       return;
     }
     if (useTemplateButton) {
