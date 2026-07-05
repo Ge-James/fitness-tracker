@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=68" />
+    <link rel="stylesheet" href="styles.css?v=69" />
   </head>
   <body>
     <div class="app-shell">
@@ -253,7 +253,7 @@
         <input type="hidden" id="bodyId" />
         <label>日期<input id="bodyDate" type="date" required /></label>
         <div class="field-row">
-          <label>体重 kg<input id="bodyWeight" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+          <label>体重 kg<input id="bodyWeight" type="number" min="0" step="0.01" inputmode="decimal" /></label>
           <label>腰围 cm<input id="bodyWaist" type="number" min="0" step="0.1" inputmode="decimal" /></label>
         </div>
         <details>
@@ -390,7 +390,7 @@
               <option value="other">其他</option>
             </select>
           </label>
-          <label>体重 kg<input id="photoWeight" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+          <label>体重 kg<input id="photoWeight" type="number" min="0" step="0.01" inputmode="decimal" /></label>
         </div>
         <label>备注<textarea id="photoNotes" rows="2"></textarea></label>
         <p class="record-meta hidden" id="photoMeta"></p>
@@ -450,6 +450,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=68"></script>
+    <script src="app.js?v=69"></script>
   </body>
 </html>

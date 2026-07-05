@@ -1450,6 +1450,7 @@ function drawLineChart(canvas, data, compact, chartId, globalAxis) {
         x,
         y,
         date: point.date,
+        key: s.key,
         label: s.label,
         value: point.value,
         unit: s.unit,
@@ -1463,7 +1464,7 @@ function drawLineChart(canvas, data, compact, chartId, globalAxis) {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      drawPointLabel(ctx, formatAxisValue(point.value), x, y, s.color, labelPosition, compact, {
+      drawPointLabel(ctx, formatMeasurementValue(point.value, s.key), x, y, s.color, labelPosition, compact, {
         left,
         right: width - right,
         top,
@@ -1556,7 +1557,7 @@ function drawPointLabel(ctx, text, x, y, color, position, compact, bounds) {
 
 function drawChartTooltip(ctx, point, width, height) {
   const title = formatAxisDate(point.date);
-  const detail = `${point.label} ${formatAxisValue(point.value)} ${point.unit}`;
+  const detail = `${point.label} ${formatMeasurementValue(point.value, point.key)} ${point.unit}`;
   ctx.font = "12px sans-serif";
   const boxW = Math.max(ctx.measureText(title).width, ctx.measureText(detail).width) + 20;
   const boxH = 44;
@@ -1652,6 +1653,12 @@ function findNearestChartPoint(canvas, chartId, event) {
 function formatAxisValue(value) {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatMeasurementValue(value, key) {
+  const precision = key === "weight" ? 2 : 1;
+  const rounded = Math.round(value * 10 ** precision) / 10 ** precision;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(precision).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function formatAxisDate(value) {
@@ -2593,7 +2600,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=68", { updateViaCache: "none" })
+      .register("service-worker.js?v=69", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
