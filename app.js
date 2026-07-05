@@ -2219,6 +2219,14 @@ function resetPhotoForm(photo) {
   renderPhotoPreview();
 }
 
+function fillPhotoWeightFromDate(date, force = false) {
+  if (!date) return;
+  const weightInput = $("#photoWeight");
+  if (!force && weightInput.value) return;
+  const measurement = state.measurements.find((item) => item.date === date && item.weight);
+  weightInput.value = measurement?.weight ? formatMeasurementValue(measurement.weight, "weight") : "";
+}
+
 function setupPhotoForm() {
   $("#photoFile").addEventListener("change", async (event) => {
     const file = event.target.files[0];
@@ -2227,11 +2235,13 @@ function setupPhotoForm() {
     if (capturedAt) {
       $("#photoCapturedAt").value = capturedAt;
       $("#photoDate").value = capturedAt.slice(0, 10);
+      fillPhotoWeightFromDate(capturedAt.slice(0, 10));
       renderRecordMeta("#photoMeta", { capturedAt });
     }
     state.draftPhotoData = await compressImage(file);
     renderPhotoPreview();
   });
+  $("#photoDate").addEventListener("change", (event) => fillPhotoWeightFromDate(event.target.value));
   $("#photoForm").addEventListener("submit", savePhoto);
   $("#deletePhotoButton").addEventListener("click", async () => {
     const id = $("#photoId").value;
@@ -2632,7 +2642,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=76", { updateViaCache: "none" })
+      .register("service-worker.js?v=77", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }

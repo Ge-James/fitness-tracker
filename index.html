@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=76" />
+    <link rel="stylesheet" href="styles.css?v=77" />
   </head>
   <body>
     <div class="app-shell">
@@ -170,7 +170,7 @@
         <input type="hidden" id="workoutId" />
         <label>日期<input id="workoutDate" type="date" required /></label>
         <label>标题<input id="workoutTitle" type="text" placeholder="例如 胸肩三头" required /></label>
-        <div class="field-row">
+        <div class="field-row workout-basics">
           <label>时长 分钟<input id="workoutDuration" type="number" min="0" inputmode="decimal" /></label>
           <label>强度 1-10<input id="workoutIntensity" type="number" min="1" max="10" inputmode="decimal" /></label>
         </div>
@@ -287,6 +287,7 @@
         <input type="hidden" id="sleepId" />
         <div class="field-row sleep-basics">
           <label>日期<input id="sleepDate" type="date" required /></label>
+          <label>发生时间<input id="impactWindow" type="text" placeholder="例如 13:00-17:00" /></label>
           <label>昨晚睡眠评分
             <select id="sleepScore">
               <option value="">未填写</option>
@@ -323,7 +324,6 @@
               <option value="heavy">重</option>
             </select>
           </label>
-          <label>发生时间<input id="impactWindow" type="text" placeholder="例如 13:00-17:00" /></label>
         </div>
         <fieldset>
           <legend>昨晚睡眠问题</legend>
@@ -448,6 +448,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=76"></script>
+    <script src="app.js?v=77"></script>
   </body>
 </html>
