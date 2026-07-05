@@ -163,10 +163,23 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function compareRecordsDesc(a, b) {
+  return `${b.date || ""} ${b.updatedAt || b.createdAt || ""}`.localeCompare(`${a.date || ""} ${a.updatedAt || a.createdAt || ""}`);
+}
+
 function formatDate(value) {
   if (!value) return "";
   const date = new Date(`${value}T00:00:00`);
   return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric", weekday: "short" });
+}
+
+function formatHomeDate(value = new Date()) {
+  return value.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).replace(/(日|号)(星期)/, "$1 $2");
 }
 
 function formatShortDate(value) {
@@ -257,11 +270,11 @@ async function loadData() {
     getAll("photos"),
     getAll("sleep"),
   ]);
-  state.workouts = workouts.sort((a, b) => b.date.localeCompare(a.date));
+  state.workouts = workouts.sort(compareRecordsDesc);
   state.templates = templates.sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
-  state.measurements = measurements.sort((a, b) => b.date.localeCompare(a.date));
-  state.photos = photos.sort((a, b) => b.date.localeCompare(a.date));
-  state.sleepEntries = sleepEntries.sort((a, b) => b.date.localeCompare(a.date));
+  state.measurements = measurements.sort(compareRecordsDesc);
+  state.photos = photos.sort(compareRecordsDesc);
+  state.sleepEntries = sleepEntries.sort(compareRecordsDesc);
   render();
 }
 
@@ -375,10 +388,10 @@ async function loadCloudData() {
     await showMessage("云端数据读取失败，请检查 Supabase 表和权限规则");
     return;
   }
-  state.workouts = workoutsResult.data.map(fromWorkoutRow);
-  state.measurements = bodyResult.data.map(fromMeasurementRow);
-  state.photos = await Promise.all(photosResult.data.map(fromPhotoRow));
-  if (!sleepResult.error) state.sleepEntries = sleepResult.data.map(fromSleepRow);
+  state.workouts = workoutsResult.data.map(fromWorkoutRow).sort(compareRecordsDesc);
+  state.measurements = bodyResult.data.map(fromMeasurementRow).sort(compareRecordsDesc);
+  state.photos = (await Promise.all(photosResult.data.map(fromPhotoRow))).sort(compareRecordsDesc);
+  if (!sleepResult.error) state.sleepEntries = sleepResult.data.map(fromSleepRow).sort(compareRecordsDesc);
   await Promise.all([
     replaceStore("workouts", state.workouts),
     replaceStore("measurements", state.measurements),
@@ -840,12 +853,7 @@ function dataUrlToBlob(dataUrl) {
 }
 
 function renderHome() {
-  const todayText = new Date().toLocaleDateString("zh-CN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  });
+  const todayText = formatHomeDate();
   $("#todayLabel").textContent = "";
   $("#homeTitle").textContent = `今日 - ${todayText}`;
 
@@ -859,7 +867,7 @@ function renderHome() {
   $("#weightDelta").textContent = deltaText(latest?.weight, previous?.weight, "kg", "weight");
   $("#waistDelta").textContent = deltaText(latest?.waist, previous?.waist, "cm", "waist");
 
-  const latestSleep = state.sleepEntries[0];
+  const latestSleep = latestSleepForHome();
   $("#stateMetricDate").textContent = latestSleep?.date ? `- ${formatShortDate(latestSleep.date)}` : "";
   $("#latestAfternoonState").textContent = latestSleep?.afternoonScore ? `${latestSleep.afternoonScore}/5` : "--";
   $("#sleepImpactNote").textContent = latestSleep ? "" : "暂无记录";
@@ -893,6 +901,10 @@ function renderHome() {
       <button class="text-button" type="button" data-edit-workout="${recent.id}">详情</button>
     </div>
   `;
+}
+
+function latestSleepForHome() {
+  return state.sleepEntries.find((item) => item.afternoonScore) || state.sleepEntries[0];
 }
 
 function deltaText(current, previous, unit, key) {
@@ -2371,7 +2383,7 @@ function setupEditHandlers() {
       return;
     }
     if (homeStateMetric) {
-      const latestSleep = state.sleepEntries[0];
+      const latestSleep = latestSleepForHome();
       if (!latestSleep) {
         showMessage("还没有状态记录");
         return;
@@ -2620,7 +2632,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=71", { updateViaCache: "none" })
+      .register("service-worker.js?v=72", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
