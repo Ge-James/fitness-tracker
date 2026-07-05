@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=61" />
+    <link rel="stylesheet" href="styles.css?v=62" />
   </head>
   <body>
     <div class="app-shell">
@@ -58,9 +58,9 @@
               <small id="waistDelta">暂无变化</small>
             </article>
             <article class="metric">
-              <span>最新状态</span>
+              <span class="metric-title"><span>状态</span><span id="stateMetricDate"></span></span>
               <strong id="latestAfternoonState">--</strong>
-              <small id="sleepImpactNote">暂无记录</small>
+              <small id="sleepImpactNote" class="metric-placeholder">暂无记录</small>
             </article>
           </div>
 
@@ -74,10 +74,10 @@
 
           <section class="panel">
             <div class="section-title">
-              <h3 id="homeTrendTitle">30 天趋势</h3>
+              <h3 id="homeTrendTitle">30天趋势 - 体重/腰围</h3>
             </div>
             <div class="range-tabs compact-tabs" role="tablist" aria-label="首页图表范围" data-chart-range="home">
-              <button class="active" data-range="30" type="button">过去30天</button>
+              <button class="active" data-range="30" type="button">30天</button>
               <button data-range="90" type="button">3个月</button>
               <button data-range="180" type="button">半年</button>
               <button data-range="365" type="button">1年</button>
@@ -122,7 +122,7 @@
             <button class="primary-button" data-open="bodyDialog" type="button">新增</button>
           </div>
           <div class="range-tabs" role="tablist" aria-label="身体图表范围" data-chart-range="body">
-            <button class="active" data-range="30" type="button">过去30天</button>
+            <button class="active" data-range="30" type="button">30天</button>
             <button data-range="90" type="button">3个月</button>
             <button data-range="180" type="button">半年</button>
             <button data-range="365" type="button">1年</button>
@@ -450,6 +450,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=61"></script>
+    <script src="app.js?v=62"></script>
   </body>
 </html>

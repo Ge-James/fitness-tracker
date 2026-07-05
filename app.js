@@ -27,7 +27,7 @@ const state = {
 };
 
 const RANGE_LABELS = {
-  30: "过去 30 天",
+  30: "30天",
   90: "3 个月",
   180: "半年",
   365: "1 年",
@@ -858,10 +858,9 @@ function renderHome() {
   $("#waistDelta").textContent = deltaText(latest?.waist, previous?.waist, "cm");
 
   const latestSleep = state.sleepEntries[0];
+  $("#stateMetricDate").textContent = latestSleep?.date ? `- ${formatShortDate(latestSleep.date)}` : "";
   $("#latestAfternoonState").textContent = latestSleep?.afternoonScore ? `${latestSleep.afternoonScore}/5` : "--";
-  $("#sleepImpactNote").textContent = latestSleep
-    ? summarizeSleepImpact(latestSleep)
-    : "暂无记录";
+  $("#sleepImpactNote").textContent = latestSleep ? "" : "暂无记录";
 
   const recent = state.workouts[0];
   const target = $("#recentWorkout");
@@ -1316,7 +1315,7 @@ function drawCharts() {
   const globalAxis = buildGlobalMeasurementAxis();
   drawLineChart($("#homeChart"), homeData, false, "home", globalAxis);
   drawLineChart($("#bodyChart"), filterMeasurements(state.bodyRange), false, "body", globalAxis);
-  $("#homeTrendTitle").textContent = `${RANGE_LABELS[state.homeRange]}趋势`;
+  $("#homeTrendTitle").textContent = `${RANGE_LABELS[state.homeRange]}趋势 - 体重/腰围`;
 }
 
 function filterMeasurements(range) {
@@ -2588,7 +2587,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=61", { updateViaCache: "none" })
+      .register("service-worker.js?v=62", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
