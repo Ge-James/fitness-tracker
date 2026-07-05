@@ -840,12 +840,14 @@ function dataUrlToBlob(dataUrl) {
 }
 
 function renderHome() {
-  $("#todayLabel").textContent = new Date().toLocaleDateString("zh-CN", {
+  const todayText = new Date().toLocaleDateString("zh-CN", {
     year: "numeric",
     month: "long",
     day: "numeric",
     weekday: "long",
   });
+  $("#todayLabel").textContent = "";
+  $("#homeTitle").textContent = `今日 - ${todayText}`;
 
   const latest = state.measurements[0];
   const previous = state.measurements[1];
@@ -2618,7 +2620,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=70", { updateViaCache: "none" })
+      .register("service-worker.js?v=71", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }

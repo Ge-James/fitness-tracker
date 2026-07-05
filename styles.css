@@ -246,6 +246,10 @@ small {
   font-size: 13px;
 }
 
+.kicker:empty {
+  display: none;
+}
+
 main {
   width: min(100%, 920px);
   margin: 0 auto;
