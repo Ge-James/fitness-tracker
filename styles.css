@@ -512,9 +512,12 @@ canvas {
 }
 
 .compact-template-title {
+  display: flex;
   min-height: 32px;
   min-width: 0;
   flex: 1;
+  align-items: center;
+  gap: 7px;
   border: 0;
   padding: 0;
   background: transparent;
@@ -524,6 +527,7 @@ canvas {
 
 .compact-template-title strong {
   display: block;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -531,8 +535,8 @@ canvas {
 
 .template-summary {
   display: inline-block;
-  max-width: 100%;
-  margin-top: 5px;
+  flex: 0 0 auto;
+  max-width: 52%;
   overflow: hidden;
   border-radius: 999px;
   padding: 3px 8px;
@@ -1289,6 +1293,27 @@ details label {
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .compact-template {
+    gap: 6px;
+    padding: 10px 8px;
+  }
+
+  .compact-template-title {
+    gap: 5px;
+  }
+
+  .template-summary {
+    max-width: 56%;
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+
+  .template-use-button {
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .compact-tabs {
