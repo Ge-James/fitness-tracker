@@ -981,7 +981,7 @@ function renderTemplates() {
       <button class="compact-template-title" type="button" data-view-template="${template.id}">
         <strong>${escapeHtml(template.title)}</strong>
       </button>
-      <button class="text-button" type="button" data-use-template="${template.id}">使用</button>
+      <button class="secondary-button template-use-button" type="button" data-use-template="${template.id}">使用模板</button>
     </article>
   `).join("");
 }

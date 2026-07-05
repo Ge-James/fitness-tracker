@@ -525,6 +525,15 @@ canvas {
   white-space: nowrap;
 }
 
+.template-use-button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+}
+
 .library-manager {
   display: grid;
   gap: 16px;
