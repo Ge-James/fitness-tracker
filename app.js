@@ -852,10 +852,10 @@ function renderHome() {
   const latestDate = latest?.date ? formatShortDate(latest.date) : "";
   $("#weightMetricDate").textContent = latestDate ? `- ${latestDate}` : "";
   $("#waistMetricDate").textContent = latestDate ? `- ${latestDate}` : "";
-  $("#latestWeight").textContent = latest?.weight ? `${latest.weight} kg` : "--";
-  $("#latestWaist").textContent = latest?.waist ? `${latest.waist} cm` : "--";
-  $("#weightDelta").textContent = deltaText(latest?.weight, previous?.weight, "kg");
-  $("#waistDelta").textContent = deltaText(latest?.waist, previous?.waist, "cm");
+  $("#latestWeight").textContent = latest?.weight ? `${formatMeasurementValue(latest.weight, "weight")} kg` : "--";
+  $("#latestWaist").textContent = latest?.waist ? `${formatMeasurementValue(latest.waist, "waist")} cm` : "--";
+  $("#weightDelta").textContent = deltaText(latest?.weight, previous?.weight, "kg", "weight");
+  $("#waistDelta").textContent = deltaText(latest?.waist, previous?.waist, "cm", "waist");
 
   const latestSleep = state.sleepEntries[0];
   $("#stateMetricDate").textContent = latestSleep?.date ? `- ${formatShortDate(latestSleep.date)}` : "";
@@ -893,11 +893,12 @@ function renderHome() {
   `;
 }
 
-function deltaText(current, previous, unit) {
+function deltaText(current, previous, unit, key) {
   if (current === undefined || previous === undefined) return "暂无变化";
-  const delta = Math.round((current - previous) * 10) / 10;
+  const precision = key === "weight" ? 2 : 1;
+  const delta = Math.round((current - previous) * 10 ** precision) / 10 ** precision;
   if (delta === 0) return "与上次相同";
-  return `${delta > 0 ? "+" : ""}${delta} ${unit} 较上次`;
+  return `${delta > 0 ? "+" : ""}${formatMeasurementValue(delta, key)} ${unit} 较上次`;
 }
 
 function renderWorkouts() {
@@ -1184,7 +1185,7 @@ function renderMeasurements() {
     return;
   }
   list.innerHTML = state.measurements.map((item) => `
-    <article class="timeline-item">
+    <article class="timeline-item clickable-item" data-edit-body="${item.id}" role="button" tabindex="0">
       <div class="timeline-title">
         <div>
           <strong>${formatDate(item.date)}</strong>
@@ -1196,8 +1197,8 @@ function renderMeasurements() {
         </div>
       </div>
       <div class="chip-row">
-        ${item.weight ? `<span class="chip">体重 ${item.weight} kg</span>` : ""}
-        ${item.waist ? `<span class="chip">腰围 ${item.waist} cm</span>` : ""}
+        ${item.weight ? `<span class="chip">体重 ${formatMeasurementValue(item.weight, "weight")} kg</span>` : ""}
+        ${item.waist ? `<span class="chip">腰围 ${formatMeasurementValue(item.waist, "waist")} cm</span>` : ""}
         ${item.bodyFat ? `<span class="chip">体脂 ${item.bodyFat}%</span>` : ""}
       </div>
     </article>
@@ -1668,15 +1669,16 @@ function formatAxisDate(value) {
 
 function setupNavigation() {
   $$("[data-nav]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const target = button.dataset.nav;
-      $$(".view").forEach((view) => view.classList.remove("active"));
-      $(`#view-${target}`).classList.add("active");
-      $$(".bottom-nav button").forEach((item) => item.classList.toggle("active", item.dataset.nav === target));
-      drawCharts();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    button.addEventListener("click", () => showView(button.dataset.nav));
   });
+}
+
+function showView(target) {
+  $$(".view").forEach((view) => view.classList.remove("active"));
+  $(`#view-${target}`)?.classList.add("active");
+  $$(".bottom-nav button").forEach((item) => item.classList.toggle("active", item.dataset.nav === target));
+  drawCharts();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function setupDialogs() {
@@ -2355,11 +2357,27 @@ function setupEditHandlers() {
     const useTemplateButton = event.target.closest("[data-use-template]");
     const deleteTemplateButton = event.target.closest("[data-delete-template]");
     const exerciseHistoryButton = event.target.closest("[data-exercise-history]");
+    const homeBodyMetric = event.target.closest("[data-home-body]");
+    const homeStateMetric = event.target.closest("[data-home-state]");
     const workoutButton = event.target.closest("[data-edit-workout]");
     const bodyButton = event.target.closest("[data-edit-body]");
     const photoButton = event.target.closest("[data-edit-photo]");
     const sleepButton = event.target.closest("[data-edit-sleep]");
     const deleteSleepButton = event.target.closest("[data-delete-sleep]");
+    if (homeBodyMetric) {
+      showView("body");
+      return;
+    }
+    if (homeStateMetric) {
+      const latestSleep = state.sleepEntries[0];
+      if (!latestSleep) {
+        showMessage("还没有状态记录");
+        return;
+      }
+      resetSleepForm(latestSleep);
+      openModal($("#sleepDialog"));
+      return;
+    }
     if (deleteWorkoutButton) {
       event.stopPropagation();
       deleteWorkout(deleteWorkoutButton.dataset.deleteWorkout);
@@ -2600,7 +2618,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=69", { updateViaCache: "none" })
+      .register("service-worker.js?v=70", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=69" />
+    <link rel="stylesheet" href="styles.css?v=70" />
   </head>
   <body>
     <div class="app-shell">
@@ -47,17 +47,17 @@
           </div>
 
           <div class="stats-grid">
-            <article class="metric">
+            <article class="metric clickable-item" data-home-body role="button" tabindex="0">
               <span class="metric-title"><span>体重</span><span id="weightMetricDate"></span></span>
               <strong id="latestWeight">--</strong>
               <small id="weightDelta">暂无变化</small>
             </article>
-            <article class="metric">
+            <article class="metric clickable-item" data-home-body role="button" tabindex="0">
               <span class="metric-title"><span>腰围</span><span id="waistMetricDate"></span></span>
               <strong id="latestWaist">--</strong>
               <small id="waistDelta">暂无变化</small>
             </article>
-            <article class="metric">
+            <article class="metric clickable-item" data-home-state role="button" tabindex="0">
               <span class="metric-title"><span>状态</span><span id="stateMetricDate"></span></span>
               <strong id="latestAfternoonState">--</strong>
               <small id="sleepImpactNote" class="metric-placeholder">暂无记录</small>
@@ -450,6 +450,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=69"></script>
+    <script src="app.js?v=70"></script>
   </body>
 </html>
