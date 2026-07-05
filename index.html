@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=77" />
+    <link rel="stylesheet" href="styles.css?v=78" />
   </head>
   <body>
     <div class="app-shell">
@@ -285,9 +285,8 @@
           <button class="icon-button" value="cancel" type="button" data-close="sleepDialog" aria-label="关闭">×</button>
         </div>
         <input type="hidden" id="sleepId" />
+        <label>日期<input id="sleepDate" type="date" required /></label>
         <div class="field-row sleep-basics">
-          <label>日期<input id="sleepDate" type="date" required /></label>
-          <label>发生时间<input id="impactWindow" type="text" placeholder="例如 13:00-17:00" /></label>
           <label>昨晚睡眠评分
             <select id="sleepScore">
               <option value="">未填写</option>
@@ -325,9 +324,10 @@
             </select>
           </label>
         </div>
+        <label>发生时间<input id="impactWindow" type="text" placeholder="例如 13:00-17:00" /></label>
         <fieldset>
           <legend>昨晚睡眠问题</legend>
-          <div class="checkbox-grid">
+          <div class="checkbox-grid sleep-options-grid">
             <label><input type="checkbox" name="sleepIssues" value="入睡困难" />入睡困难</label>
             <label><input type="checkbox" name="sleepIssues" value="早醒" />早醒</label>
             <label><input type="checkbox" name="sleepIssues" value="多梦" />多梦</label>
@@ -338,7 +338,7 @@
         </fieldset>
         <fieldset>
           <legend>难受类型</legend>
-          <div class="checkbox-grid">
+          <div class="checkbox-grid sleep-options-grid">
             <label><input type="checkbox" name="symptoms" value="困" />困</label>
             <label><input type="checkbox" name="symptoms" value="头昏" />头昏</label>
             <label><input type="checkbox" name="symptoms" value="注意力差" />注意力差</label>
@@ -349,7 +349,7 @@
         </fieldset>
         <fieldset>
           <legend>可能诱因</legend>
-          <div class="checkbox-grid">
+          <div class="checkbox-grid sleep-options-grid">
             <label><input type="checkbox" name="factors" value="晚睡/睡的少" />晚睡/睡的少</label>
             <label><input type="checkbox" name="factors" value="晚餐晚/多" />晚餐晚/多</label>
             <label><input type="checkbox" name="factors" value="睡前屏幕" />睡前屏幕</label>
@@ -448,6 +448,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=77"></script>
+    <script src="app.js?v=78"></script>
   </body>
 </html>
