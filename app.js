@@ -855,7 +855,7 @@ function dataUrlToBlob(dataUrl) {
 function renderHome() {
   const todayText = formatHomeDate();
   $("#todayLabel").textContent = "";
-  $("#homeTitle").textContent = `今日 - ${todayText}`;
+  $("#homeTitle").innerHTML = `今日 <span class="home-title-date">- ${todayText}</span>`;
 
   const latest = state.measurements[0];
   const previous = state.measurements[1];
@@ -2632,7 +2632,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=72", { updateViaCache: "none" })
+      .register("service-worker.js?v=73", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
