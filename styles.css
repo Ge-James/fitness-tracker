@@ -620,6 +620,15 @@ canvas {
   font-size: 12px;
 }
 
+.home-workout-summary {
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.home-workout-summary .chip {
+  padding: 4px 8px;
+}
+
 .empty-state {
   padding: 18px;
   border: 1px dashed #c9d5ce;

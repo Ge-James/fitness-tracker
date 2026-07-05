@@ -886,9 +886,8 @@ function renderHome() {
       </div>
       <button class="text-button" type="button" data-edit-workout="${recent.id}">详情</button>
     </div>
-    <div class="chip-row">
-      <span class="chip">${recent.exercises.length} 个动作</span>
-      <span class="chip">${setCount} 组</span>
+    <div class="chip-row home-workout-summary">
+      <span class="chip">${recent.exercises.length} 个动作 · ${setCount} 组</span>
       ${recent.durationMinutes ? `<span class="chip">${recent.durationMinutes} 分钟</span>` : ""}
     </div>
   `;
@@ -2589,7 +2588,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=60", { updateViaCache: "none" })
+      .register("service-worker.js?v=61", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
