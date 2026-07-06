@@ -1264,7 +1264,7 @@ function renderSleep() {
     return;
   }
   list.innerHTML = state.sleepEntries.map((item) => `
-    <article class="timeline-item">
+    <article class="timeline-item clickable-item" data-edit-sleep="${item.id}" role="button" tabindex="0">
       <div class="timeline-title">
         <div>
           <strong>${formatDate(item.date)}</strong>
@@ -2642,7 +2642,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=78", { updateViaCache: "none" })
+      .register("service-worker.js?v=79", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
