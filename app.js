@@ -2,6 +2,7 @@ const DB_NAME = "fitness-tracker-db";
 const DB_VERSION = 4;
 const STORES = ["workouts", "measurements", "photos", "sleep", "syncQueue", "templates"];
 const HIDDEN_EXERCISES_KEY = "fitness.hiddenExercises";
+const LANGUAGE_KEY = "fitness.language";
 const state = {
   db: null,
   workouts: [],
@@ -24,7 +25,173 @@ const state = {
   syncInProgress: false,
   scrollLockY: 0,
   hiddenExerciseNames: new Set(),
+  language: localStorage.getItem(LANGUAGE_KEY) || "zh",
 };
+
+const TEXT_EN = {
+  "健身追踪": "Fitness Tracker",
+  "登录": "Sign in",
+  "本地模式": "Local",
+  "未登录": "Signed out",
+  "已同步": "Synced",
+  "正在同步": "Syncing",
+  "同步失败": "Sync failed",
+  "首页": "Home",
+  "训练": "Workouts",
+  "身体": "Body",
+  "照片": "Photos",
+  "状态": "Status",
+  "今日": "Today",
+  "记录训练": "Log workout",
+  "身体数据": "Body data",
+  "上传照片": "Upload photo",
+  "状态记录": "Status entry",
+  "体重": "Weight",
+  "体重 kg": "Weight kg",
+  "腰围": "Waist",
+  "腰围 cm": "Waist cm",
+  "暂无变化": "No change",
+  "暂无记录": "No records",
+  "最近训练": "Recent workout",
+  "查看": "View",
+  "还没有训练记录": "No workouts yet",
+  "30天": "30D",
+  "3个月": "3M",
+  "半年": "6M",
+  "1年": "1Y",
+  "5年": "5Y",
+  "新增": "Add",
+  "上传": "Upload",
+  "模板": "Templates",
+  "动作历史": "Exercise history",
+  "管理": "Manage",
+  "记录训练": "Log workout",
+  "编辑训练": "Edit workout",
+  "日期": "Date",
+  "标题": "Title",
+  "时长 分钟": "Duration min",
+  "强度 1-10": "Intensity 1-10",
+  "备注": "Notes",
+  "选择模板": "Choose template",
+  "使用模板": "Use template",
+  "保存为模板": "Save as template",
+  "动作": "Exercises",
+  "添加动作": "Add exercise",
+  "取消": "Cancel",
+  "保存": "Save",
+  "删除": "Delete",
+  "编辑": "Edit",
+  "模板详情": "Template details",
+  "动作库管理": "Exercise library",
+  "可显示": "Visible",
+  "已隐藏": "Hidden",
+  "身体数据": "Body data",
+  "更多指标": "More metrics",
+  "胸围 cm": "Chest cm",
+  "臀围 cm": "Hips cm",
+  "大腿 cm": "Thigh cm",
+  "手臂 cm": "Arm cm",
+  "体脂 %": "Body fat %",
+  "日期": "Date",
+  "照片": "Photos",
+  "标题": "Title",
+  "备注": "Notes",
+  "昨晚睡眠评分": "Sleep score",
+  "醒来感觉": "Wake feeling",
+  "下午状态评分": "Afternoon score",
+  "严重程度": "Severity",
+  "发生时间": "Time window",
+  "昨晚睡眠问题": "Sleep issues",
+  "难受类型": "Symptoms",
+  "可能诱因": "Possible factors",
+  "未填写": "Blank",
+  "很差": "Very poor",
+  "1 很差": "1 Very poor",
+  "偏差": "Poor",
+  "2 偏差": "2 Poor",
+  "一般": "Okay",
+  "3 一般": "3 Okay",
+  "不错": "Good",
+  "4 不错": "4 Good",
+  "很好": "Great",
+  "5 很好": "5 Great",
+  "很累": "Tired",
+  "还行": "Okay",
+  "清醒": "Clear",
+  "很难受": "Bad",
+  "1 很难受": "1 Bad",
+  "还不错": "Good",
+  "4 还不错": "4 Good",
+  "轻": "Mild",
+  "中": "Medium",
+  "重": "Heavy",
+  "入睡困难": "Hard to fall asleep",
+  "早醒": "Early wake",
+  "多梦": "Many dreams",
+  "夜醒": "Wake at night",
+  "睡眠浅": "Light sleep",
+  "打断多": "Interrupted",
+  "困": "Sleepy",
+  "头昏": "Dizzy",
+  "注意力差": "Poor focus",
+  "眼睛难受": "Eye discomfort",
+  "身体疲劳": "Physical fatigue",
+  "烦躁": "Irritable",
+  "晚睡/睡的少": "Late/short sleep",
+  "晚餐晚/多": "Late/heavy dinner",
+  "睡前屏幕": "Screen before bed",
+  "压力": "Stress",
+  "鼻塞": "Congestion",
+  "温度不适": "Bad temperature",
+  "上传照片": "Upload photo",
+  "选择照片后会显示预览": "Preview appears after choosing a photo",
+  "照片": "Photo",
+  "角度": "Angle",
+  "正面": "Front",
+  "侧面": "Side",
+  "背面": "Back",
+  "其他": "Other",
+  "当天照片": "Photos that day",
+  "数据备份": "Data backup",
+  "导出备份": "Export backup",
+  "导入备份": "Import backup",
+  "上传本地数据到云端": "Upload local data",
+  "从云端刷新": "Refresh from cloud",
+  "账号": "Account",
+  "邮箱": "Email",
+  "密码": "Password",
+  "注册": "Sign up",
+  "退出登录": "Sign out",
+  "提示": "Notice",
+  "确定": "OK",
+  "知道了": "OK",
+  "确认操作": "Confirm",
+  "删除照片": "Delete photo",
+  "删除训练": "Delete workout",
+  "删除身体数据": "Delete body data",
+  "删除状态记录": "Delete status entry",
+  "删除模板": "Delete template",
+  "隐藏": "Hide",
+  "组数": "Sets",
+  "次数": "Reps",
+  "重量 lb": "Weight lb",
+  "动作名称": "Exercise name",
+  "类型": "Type",
+  "力量": "Strength",
+  "有氧": "Cardio",
+  "拉伸/恢复": "Mobility",
+  "动作备注": "Exercise notes",
+  "删除动作": "Delete exercise",
+  "例如 胸肩三头": "e.g. Chest and shoulders",
+  "例如 卧推": "e.g. Bench press",
+  "例如 13:00-17:00": "e.g. 13:00-17:00",
+  "比如下午什么时候开始难受、怎么缓解、是否影响训练或工作": "When symptoms started, what helped, impact on training/work",
+  "搜索训练、动作、备注": "Search workouts, exercises, notes",
+};
+
+const TEXT_ZH = Object.fromEntries(Object.entries(TEXT_EN).map(([zh, en]) => [en, zh]));
+const textNodeOriginals = new WeakMap();
+const attrOriginals = new WeakMap();
 
 const RANGE_LABELS = {
   30: "30天",
@@ -32,6 +199,15 @@ const RANGE_LABELS = {
   180: "半年",
   365: "1 年",
   1825: "5 年",
+  all: "All time",
+};
+
+const RANGE_LABELS_EN = {
+  30: "30D",
+  90: "3M",
+  180: "6M",
+  365: "1Y",
+  1825: "5Y",
   all: "All time",
 };
 
@@ -46,6 +222,58 @@ const AVATAR_VARIANTS = [
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+function translateValue(value) {
+  if (!value) return value;
+  const trimmed = value.trim();
+  const leading = value.match(/^\s*/)?.[0] || "";
+  const trailing = value.match(/\s*$/)?.[0] || "";
+  const translated = state.language === "en" ? TEXT_EN[trimmed] : TEXT_ZH[trimmed];
+  return translated ? `${leading}${translated}${trailing}` : value;
+}
+
+function applyLanguage(root = document.body) {
+  document.documentElement.lang = state.language === "en" ? "en" : "zh-CN";
+  document.title = state.language === "en" ? "Fitness Tracker" : "健身追踪";
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      if (["SCRIPT", "STYLE"].includes(node.parentElement?.tagName)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    if (!textNodeOriginals.has(node)) textNodeOriginals.set(node, node.nodeValue);
+    const original = textNodeOriginals.get(node);
+    node.nodeValue = state.language === "en" ? translateValue(original) : original;
+  });
+  $$("[placeholder], [aria-label], [title]", root).forEach((element) => {
+    ["placeholder", "aria-label", "title"].forEach((attr) => {
+      if (!element.hasAttribute(attr)) return;
+      const key = `${attr}:${element.getAttribute(attr)}`;
+      if (!attrOriginals.has(element)) attrOriginals.set(element, {});
+      const originals = attrOriginals.get(element);
+      if (!originals[attr]) originals[attr] = element.getAttribute(attr);
+      element.setAttribute(attr, state.language === "en" ? translateValue(originals[attr]) : originals[attr]);
+    });
+  });
+  updateLanguageButton();
+}
+
+function updateLanguageButton() {
+  const button = $("#languageButton");
+  if (!button) return;
+  button.textContent = state.language === "en" ? "中" : "EN";
+  button.setAttribute("aria-label", state.language === "en" ? "Switch to Chinese" : "切换到英文");
+}
+
+function toggleLanguage() {
+  state.language = state.language === "en" ? "zh" : "en";
+  localStorage.setItem(LANGUAGE_KEY, state.language);
+  render();
+}
 
 function hasCloud() {
   return Boolean(state.supabase && state.user);
@@ -62,6 +290,7 @@ function updateSyncStatusUi() {
   if (!target) return;
   target.textContent = state.syncMessage;
   target.className = `sync-status ${state.syncStatus}`;
+  applyLanguage(target);
 }
 
 function markSyncReady() {
@@ -76,6 +305,7 @@ function markSyncReady() {
 
 function openModal(dialog) {
   if (!dialog || dialog.open) return;
+  applyLanguage(dialog);
   lockPageScroll();
   dialog.showModal();
 }
@@ -170,10 +400,13 @@ function compareRecordsDesc(a, b) {
 function formatDate(value) {
   if (!value) return "";
   const date = new Date(`${value}T00:00:00`);
-  return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric", weekday: "short" });
+  return date.toLocaleDateString(state.language === "en" ? "en-US" : "zh-CN", { month: "short", day: "numeric", weekday: "short" });
 }
 
 function formatHomeDate(value = new Date()) {
+  if (state.language === "en") {
+    return value.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
+  }
   return value.toLocaleDateString("zh-CN", {
     year: "numeric",
     month: "long",
@@ -185,7 +418,7 @@ function formatHomeDate(value = new Date()) {
 function formatShortDate(value) {
   if (!value) return "";
   const date = new Date(`${value}T00:00:00`);
-  return date.toLocaleDateString("zh-CN", { month: "long", day: "numeric" });
+  return date.toLocaleDateString(state.language === "en" ? "en-US" : "zh-CN", { month: "long", day: "numeric" });
 }
 
 function formatDateTime(value) {
@@ -523,6 +756,7 @@ function render() {
   renderSleep();
   renderTemplateOptions();
   drawCharts();
+  applyLanguage();
 }
 
 function getExerciseLibrary(options = {}) {
@@ -1387,7 +1621,10 @@ function drawCharts() {
   const globalAxis = buildGlobalMeasurementAxis();
   drawLineChart($("#homeChart"), homeData, false, "home", globalAxis);
   drawLineChart($("#bodyChart"), filterMeasurements(state.bodyRange), false, "body", globalAxis);
-  $("#homeTrendTitle").textContent = `${RANGE_LABELS[state.homeRange]}趋势 - 体重/腰围`;
+  const homeRangeLabel = state.language === "en" ? RANGE_LABELS_EN[state.homeRange] : RANGE_LABELS[state.homeRange];
+  $("#homeTrendTitle").textContent = state.language === "en"
+    ? `${homeRangeLabel} trend - weight/waist`
+    : `${homeRangeLabel}趋势 - 体重/腰围`;
 }
 
 function filterMeasurements(range) {
@@ -1758,6 +1995,11 @@ function setupDialogs() {
     dialog.addEventListener("close", syncModalLock);
     dialog.addEventListener("cancel", () => setTimeout(syncModalLock, 0));
   });
+}
+
+function setupLanguage() {
+  $("#languageButton")?.addEventListener("click", toggleLanguage);
+  updateLanguageButton();
 }
 
 function openCreateDialog(id) {
@@ -2694,6 +2936,7 @@ async function init() {
   initSupabaseClient();
   setupNavigation();
   setupDialogs();
+  setupLanguage();
   setupAuth();
   setupWorkoutForm();
   setupBodyForm();
@@ -2714,7 +2957,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=81", { updateViaCache: "none" })
+      .register("service-worker.js?v=82", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
