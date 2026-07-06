@@ -33,6 +33,7 @@ const TEXT_EN = {
   "登录": "Sign in",
   "本地模式": "Local",
   "未登录": "Signed out",
+  "未配置": "Not configured",
   "已同步": "Synced",
   "正在同步": "Syncing",
   "同步失败": "Sync failed",
@@ -97,13 +98,16 @@ const TEXT_EN = {
   "标题": "Title",
   "备注": "Notes",
   "昨晚睡眠评分": "Sleep score",
+  "睡眠": "Sleep",
   "醒来感觉": "Wake feeling",
+  "下午": "Afternoon",
   "下午状态评分": "Afternoon score",
   "严重程度": "Severity",
   "发生时间": "Time window",
   "昨晚睡眠问题": "Sleep issues",
   "难受类型": "Symptoms",
   "可能诱因": "Possible factors",
+  "诱因": "Factor",
   "未填写": "Blank",
   "很差": "Very poor",
   "1 很差": "1 Very poor",
@@ -145,7 +149,7 @@ const TEXT_EN = {
   "温度不适": "Bad temperature",
   "上传照片": "Upload photo",
   "选择照片后会显示预览": "Preview appears after choosing a photo",
-  "照片": "Photo",
+  "照片": "Photos",
   "角度": "Angle",
   "正面": "Front",
   "侧面": "Side",
@@ -158,6 +162,8 @@ const TEXT_EN = {
   "上传本地数据到云端": "Upload local data",
   "从云端刷新": "Refresh from cloud",
   "账号": "Account",
+  "登录后可把训练、身体数据和照片同步到云端。": "Sign in to sync workouts, body data, and photos to the cloud.",
+  "还没有配置 Supabase，当前仍是本地模式。": "Supabase is not configured yet. The app is still in local mode.",
   "邮箱": "Email",
   "密码": "Password",
   "注册": "Sign up",
@@ -171,9 +177,54 @@ const TEXT_EN = {
   "删除身体数据": "Delete body data",
   "删除状态记录": "Delete status entry",
   "删除模板": "Delete template",
+  "删除动作模板": "Delete exercise template",
+  "编辑身体数据": "Edit body data",
+  "编辑状态记录": "Edit status entry",
+  "复制训练": "Copy workout",
+  "从模板记录": "From template",
   "隐藏": "Hide",
+  "恢复": "Restore",
+  "重量次数": "Weight/reps",
+  "还没有可显示的动作。": "No visible exercises yet.",
+  "没有隐藏的动作。": "No hidden exercises.",
+  "这个模板还没有动作。": "This template has no exercises yet.",
   "组数": "Sets",
   "次数": "Reps",
+  "详情": "Details",
+  "复制": "Copy",
+  "使用": "Use",
+  "历史": "History",
+  "暂无身体数据": "No body data",
+  "暂无可绘制的数据": "No plottable data",
+  "体重/kg": "Weight/kg",
+  "腰围/cm": "Waist/cm",
+  "较上次": "vs last",
+  "与上次相同": "Same as last",
+  "先记录一次训练，后面就能看到历史": "Log a workout first, then history will appear here",
+  "没有找到匹配的训练": "No matching workouts",
+  "还没有模板。保存一次训练模板后会显示在这里。": "No templates yet. Saved workout templates will appear here.",
+  "没有匹配的模板": "No matching templates",
+  "记录训练后，这里会自动整理动作历史。": "Exercise history will be organized here after you log workouts.",
+  "没有匹配的动作": "No matching exercises",
+  "记录体重和腰围后，这里会显示趋势": "Log weight and waist data, then trends will appear here",
+  "上传第一张照片，开始记录身材变化": "Upload the first photo to start tracking body changes",
+  "记录一次状态后，这里会显示历史": "Log a status entry, then history will appear here",
+  "拍摄": "Taken",
+  "照片记录": "Photo record",
+  "训练次数": "Workouts",
+  "最高重量": "Top weight",
+  "估算 1RM": "Estimated 1RM",
+  "发生时间": "Time window",
+  "睡眠问题": "Sleep issues",
+  "醒来感觉": "Wake feeling",
+  "先填写训练标题，再保存模板": "Add a workout title before saving a template",
+  "模板至少需要一个完整动作": "A template needs at least one complete exercise",
+  "已保存为训练模板": "Saved as workout template",
+  "请先选择一个模板": "Choose a template first",
+  "至少添加一个动作，并填写重量、次数、组数或备注": "Add at least one exercise and fill weight, reps, sets, or notes",
+  "请选择一张照片": "Choose a photo first",
+  "还没有状态记录": "No status entries yet",
+  "照片预览": "Photo preview",
   "重量 lb": "Weight lb",
   "动作名称": "Exercise name",
   "类型": "Type",
@@ -230,6 +281,56 @@ function translateValue(value) {
   const trailing = value.match(/\s*$/)?.[0] || "";
   const translated = state.language === "en" ? TEXT_EN[trimmed] : TEXT_ZH[trimmed];
   return translated ? `${leading}${translated}${trailing}` : value;
+}
+
+function t(zh) {
+  return state.language === "en" ? (TEXT_EN[zh] || zh) : zh;
+}
+
+function actionCount(count) {
+  return state.language === "en" ? `${count} ${count === 1 ? "exercise" : "exercises"}` : `${count} 个动作`;
+}
+
+function setCountText(count) {
+  return state.language === "en" ? `${count} ${count === 1 ? "set" : "sets"}` : `${count} 组`;
+}
+
+function repCountText(count) {
+  return state.language === "en" ? `${count} ${count === 1 ? "rep" : "reps"}` : `${count} 次`;
+}
+
+function workoutCountText(count) {
+  return state.language === "en" ? `${count} ${count === 1 ? "workout" : "workouts"}` : `${count} 次训练`;
+}
+
+function templateCountText(count) {
+  return state.language === "en" ? `${count} ${count === 1 ? "template" : "templates"}` : `${count} 个模板`;
+}
+
+function photoCountText(count) {
+  return state.language === "en" ? `${count} ${count === 1 ? "photo" : "photos"}` : `${count} 张照片`;
+}
+
+function minuteText(count) {
+  return state.language === "en" ? `${count} min` : `${count} 分钟`;
+}
+
+function intensityText(value) {
+  return state.language === "en" ? `Intensity ${value}/10` : `强度 ${value}/10`;
+}
+
+function angleLabel(angle) {
+  const labels = {
+    front: t("正面"),
+    side: t("侧面"),
+    back: t("背面"),
+    other: t("其他"),
+  };
+  return labels[angle] || t("其他");
+}
+
+function enumLabel(value) {
+  return t(value);
 }
 
 function applyLanguage(root = document.body) {
@@ -337,15 +438,15 @@ function unlockPageScroll() {
 }
 
 function showMessage(message, title = "提示") {
-  return showDialogMessage({ title, message, confirmText: "知道了", showCancel: false });
+  return showDialogMessage({ title: t(title), message: t(message), confirmText: t("知道了"), showCancel: false });
 }
 
 function showConfirm(message, options = {}) {
   return showDialogMessage({
-    title: options.title || "确认操作",
-    message,
-    confirmText: options.confirmText || "确定",
-    cancelText: options.cancelText || "取消",
+    title: t(options.title || "确认操作"),
+    message: t(message),
+    confirmText: t(options.confirmText || "确定"),
+    cancelText: t(options.cancelText || "取消"),
     danger: options.danger || false,
     showCancel: true,
   });
@@ -704,16 +805,16 @@ function setupAuth() {
 }
 
 function updateAuthUi() {
-  const label = state.user?.email || (state.cloudReady ? "登录" : "未配置");
+  const label = state.user?.email || (state.cloudReady ? t("登录") : t("未配置"));
   const authButton = $("#authButton");
   authButton.innerHTML = renderAvatar(label, Boolean(state.user));
-  authButton.setAttribute("aria-label", state.user ? `账号：${state.user.email}` : label);
+  authButton.setAttribute("aria-label", state.user ? `${t("账号")}：${state.user.email}` : label);
   authButton.title = state.user ? state.user.email : label;
   $("#authStatus").textContent = state.user
-    ? `已登录：${state.user.email}`
+    ? (state.language === "en" ? `Signed in: ${state.user.email}` : `已登录：${state.user.email}`)
     : state.cloudReady
-      ? "登录后可把训练、身体数据和照片同步到云端。"
-      : "还没有配置 Supabase，当前仍是本地模式。";
+      ? t("登录后可把训练、身体数据和照片同步到云端。")
+      : t("还没有配置 Supabase，当前仍是本地模式。");
   $("#signOutButton").classList.toggle("hidden", !state.user);
   $("#uploadCloudButton")?.classList.toggle("hidden", !state.user);
   $("#refreshCloudButton")?.classList.toggle("hidden", !state.user);
@@ -733,7 +834,7 @@ function renderAvatar(label, isSignedIn) {
 }
 
 function getAvatarInitial(seed, isSignedIn) {
-  if (!isSignedIn) return "登";
+  if (!isSignedIn) return state.language === "en" ? "S" : "登";
   const local = seed.split("@")[0] || seed;
   const match = local.match(/[a-z0-9]/i);
   return (match?.[0] || "我").toUpperCase();
@@ -814,7 +915,10 @@ function saveHiddenExercises() {
 async function hideExerciseTemplate(name, input) {
   const cleanName = String(name || "").trim();
   if (!cleanName) return;
-  if (!await showConfirm(`从动作库隐藏「${cleanName}」？历史训练记录不会删除。`, {
+  const message = state.language === "en"
+    ? `Hide "${cleanName}" from the exercise library? Workout history will not be deleted.`
+    : `从动作库隐藏「${cleanName}」？历史训练记录不会删除。`;
+  if (!await showConfirm(message, {
     title: "删除动作模板",
     confirmText: "隐藏",
     danger: true,
@@ -842,19 +946,19 @@ function renderExerciseLibraryManager() {
   const exercises = getExerciseLibrary({ includeHidden: true });
   const visible = exercises.filter((exercise) => !exercise.hidden);
   const hidden = exercises.filter((exercise) => exercise.hidden);
-  $("#visibleExerciseCount").textContent = `${visible.length} 个动作`;
-  $("#hiddenExerciseCount").textContent = `${hidden.length} 个动作`;
+  $("#visibleExerciseCount").textContent = actionCount(visible.length);
+  $("#hiddenExerciseCount").textContent = actionCount(hidden.length);
   visibleList.innerHTML = visible.length
     ? visible.map((exercise) => renderLibraryItem(exercise, "hide")).join("")
-    : `<div class="empty-state compact-empty">还没有可显示的动作。</div>`;
+    : `<div class="empty-state compact-empty">${t("还没有可显示的动作。")}</div>`;
   hiddenList.innerHTML = hidden.length
     ? hidden.map((exercise) => renderLibraryItem(exercise, "restore")).join("")
-    : `<div class="empty-state compact-empty">没有隐藏的动作。</div>`;
+    : `<div class="empty-state compact-empty">${t("没有隐藏的动作。")}</div>`;
 }
 
 function renderLibraryItem(exercise, action) {
-  const typeLabel = exercise.type === "cardio" ? "有氧" : exercise.type === "other" ? "其他" : "重量次数";
-  const actionLabel = action === "restore" ? "恢复" : "隐藏";
+  const typeLabel = exercise.type === "cardio" ? t("有氧") : exercise.type === "other" ? t("其他") : t("重量次数");
+  const actionLabel = action === "restore" ? t("恢复") : t("隐藏");
   const actionClass = action === "restore" ? "text-button" : "danger-link";
   return `
     <article class="library-item">
@@ -895,9 +999,9 @@ function renderExerciseSuggestions(input) {
     <div class="exercise-suggestion-row">
       <button class="exercise-suggestion" type="button" data-exercise-name="${escapeAttr(exercise.name)}">
         <span>${escapeHtml(exercise.name)}</span>
-        <small>${exercise.type === "cardio" ? "有氧" : exercise.type === "other" ? "其他" : "重量次数"}</small>
+        <small>${exercise.type === "cardio" ? t("有氧") : exercise.type === "other" ? t("其他") : t("重量次数")}</small>
       </button>
-      <button class="exercise-suggestion-delete" type="button" data-exercise-name="${escapeAttr(exercise.name)}" aria-label="删除动作模板 ${escapeAttr(exercise.name)}">×</button>
+      <button class="exercise-suggestion-delete" type="button" data-exercise-name="${escapeAttr(exercise.name)}" aria-label="${t("删除动作模板")} ${escapeAttr(exercise.name)}">×</button>
     </div>
   `).join("");
   panel.classList.remove("hidden");
@@ -917,7 +1021,7 @@ function renderTemplateOptions() {
   const select = $("#templateSelect");
   if (!select) return;
   select.innerHTML = [
-    `<option value="">选择模板</option>`,
+    `<option value="">${t("选择模板")}</option>`,
     ...state.templates.map((template) => `<option value="${escapeAttr(template.id)}">${escapeHtml(template.title)}</option>`),
   ].join("");
   $("#useTemplateButton")?.toggleAttribute("disabled", !state.templates.length);
@@ -1139,13 +1243,13 @@ function renderHome() {
   const latestSleep = latestSleepForHome();
   $("#stateMetricDate").textContent = latestSleep?.date ? `- ${formatShortDate(latestSleep.date)}` : "";
   $("#latestAfternoonState").textContent = latestSleep?.afternoonScore ? `${latestSleep.afternoonScore}/5` : "--";
-  $("#sleepImpactNote").textContent = latestSleep ? "" : "暂无记录";
+  $("#sleepImpactNote").textContent = latestSleep ? "" : t("暂无记录");
 
   const recent = state.workouts[0];
   const target = $("#recentWorkout");
   if (!recent) {
     target.className = "empty-state";
-    target.textContent = "还没有训练记录";
+    target.textContent = t("还没有训练记录");
     target.removeAttribute("data-edit-workout");
     target.removeAttribute("role");
     target.removeAttribute("tabindex");
@@ -1156,8 +1260,8 @@ function renderHome() {
   target.setAttribute("role", "button");
   target.setAttribute("tabindex", "0");
   const setCount = recent.exercises.reduce((sum, item) => sum + (item.setCount || item.sets.length), 0);
-  const summaryParts = [`${recent.exercises.length} 个动作`, `${setCount} 组`];
-  if (recent.durationMinutes) summaryParts.push(`${recent.durationMinutes} 分钟`);
+  const summaryParts = [actionCount(recent.exercises.length), setCountText(setCount)];
+  if (recent.durationMinutes) summaryParts.push(minuteText(recent.durationMinutes));
   target.innerHTML = `
     <div class="timeline-title recent-workout-title">
       <div class="recent-workout-main">
@@ -1167,7 +1271,7 @@ function renderHome() {
           <span class="recent-workout-summary">${summaryParts.join(" · ")}</span>
         </div>
       </div>
-      <button class="text-button" type="button" data-edit-workout="${recent.id}">详情</button>
+      <button class="text-button" type="button" data-edit-workout="${recent.id}">${t("详情")}</button>
     </div>
   `;
 }
@@ -1177,23 +1281,25 @@ function latestSleepForHome() {
 }
 
 function deltaText(current, previous, unit, key) {
-  if (current === undefined || previous === undefined) return "暂无变化";
+  if (current === undefined || previous === undefined) return t("暂无变化");
   const precision = key === "weight" ? 2 : 1;
   const delta = Math.round((current - previous) * 10 ** precision) / 10 ** precision;
-  if (delta === 0) return "与上次相同";
-  return `${delta > 0 ? "+" : ""}${formatMeasurementValue(delta, key)} ${unit} 较上次`;
+  if (delta === 0) return t("与上次相同");
+  return state.language === "en"
+    ? `${delta > 0 ? "+" : ""}${formatMeasurementValue(delta, key)} ${unit} ${t("较上次")}`
+    : `${delta > 0 ? "+" : ""}${formatMeasurementValue(delta, key)} ${unit} 较上次`;
 }
 
 function renderWorkouts() {
   const list = $("#workoutList");
   if (!state.workouts.length) {
-    list.innerHTML = `<div class="empty-state">先记录一次训练，后面就能看到历史</div>`;
+    list.innerHTML = `<div class="empty-state">${t("先记录一次训练，后面就能看到历史")}</div>`;
     return;
   }
   const query = getWorkoutSearchQuery();
   const workouts = query ? state.workouts.filter((workout) => matchesWorkoutSearch(workout, query)) : state.workouts;
   if (!workouts.length) {
-    list.innerHTML = `<div class="empty-state">没有找到匹配的训练</div>`;
+    list.innerHTML = `<div class="empty-state">${t("没有找到匹配的训练")}</div>`;
     return;
   }
   list.innerHTML = workouts.map((workout) => {
@@ -1206,17 +1312,17 @@ function renderWorkouts() {
             <span class="timeline-meta">${formatDate(workout.date)}</span>
           </div>
           <div class="item-actions">
-            <button class="text-button" type="button" data-edit-workout="${workout.id}">详情</button>
-            <button class="text-button" type="button" data-copy-workout="${workout.id}">复制</button>
-            <button class="danger-link" type="button" data-delete-workout="${workout.id}">删除</button>
+            <button class="text-button" type="button" data-edit-workout="${workout.id}">${t("详情")}</button>
+            <button class="text-button" type="button" data-copy-workout="${workout.id}">${t("复制")}</button>
+            <button class="danger-link" type="button" data-delete-workout="${workout.id}">${t("删除")}</button>
           </div>
         </div>
         ${workout.notes ? `<p class="muted">${escapeHtml(workout.notes)}</p>` : ""}
         <div class="chip-row">
-          <span class="chip">${workout.exercises.length} 个动作</span>
-          <span class="chip">${setCount} 组</span>
-          ${workout.durationMinutes ? `<span class="chip">${workout.durationMinutes} 分钟</span>` : ""}
-          ${workout.intensity ? `<span class="chip">强度 ${workout.intensity}/10</span>` : ""}
+          <span class="chip">${actionCount(workout.exercises.length)}</span>
+          <span class="chip">${setCountText(setCount)}</span>
+          ${workout.durationMinutes ? `<span class="chip">${minuteText(workout.durationMinutes)}</span>` : ""}
+          ${workout.intensity ? `<span class="chip">${intensityText(workout.intensity)}</span>` : ""}
         </div>
         <div class="chip-row">
           ${workout.exercises.slice(0, 4).map((item) => `<span class="chip">${escapeHtml(formatExerciseSummary(item))}</span>`).join("")}
@@ -1250,13 +1356,13 @@ function renderTemplates() {
   if (!list) return;
   const query = getWorkoutSearchQuery();
   const templates = query ? state.templates.filter((template) => matchesTemplateSearch(template, query)) : state.templates;
-  $("#templateCount").textContent = `${templates.length} 个模板`;
+  $("#templateCount").textContent = templateCountText(templates.length);
   if (!state.templates.length) {
-    list.innerHTML = `<div class="empty-state compact-empty">还没有模板。保存一次训练模板后会显示在这里。</div>`;
+    list.innerHTML = `<div class="empty-state compact-empty">${t("还没有模板。保存一次训练模板后会显示在这里。")}</div>`;
     return;
   }
   if (!templates.length) {
-    list.innerHTML = `<div class="empty-state compact-empty">没有匹配的模板</div>`;
+    list.innerHTML = `<div class="empty-state compact-empty">${t("没有匹配的模板")}</div>`;
     return;
   }
   list.innerHTML = templates.map((template) => {
@@ -1266,9 +1372,9 @@ function renderTemplates() {
       <article class="template-item compact-template">
         <button class="compact-template-title" type="button" data-view-template="${template.id}">
           <strong>${escapeHtml(template.title)}</strong>
-          <span class="template-summary">${exercises.length} 个动作 · ${setCount} 组</span>
+          <span class="template-summary">${actionCount(exercises.length)} · ${setCountText(setCount)}</span>
         </button>
-        <button class="secondary-button template-use-button" type="button" data-use-template="${template.id}">使用模板</button>
+        <button class="secondary-button template-use-button" type="button" data-use-template="${template.id}">${t("使用模板")}</button>
       </article>
     `;
   }).join("");
@@ -1367,22 +1473,22 @@ function renderExerciseHistoryList() {
   const query = getWorkoutSearchQuery();
   const allHistory = getExerciseHistory();
   const history = query ? allHistory.filter((item) => matchesExerciseHistorySearch(item, query)) : allHistory;
-  $("#exerciseHistoryCount").textContent = `${history.length} 个动作`;
+  $("#exerciseHistoryCount").textContent = actionCount(history.length);
   if (!allHistory.length) {
-    list.innerHTML = `<div class="empty-state compact-empty">记录训练后，这里会自动整理动作历史。</div>`;
+    list.innerHTML = `<div class="empty-state compact-empty">${t("记录训练后，这里会自动整理动作历史。")}</div>`;
     return;
   }
   if (!history.length) {
-    list.innerHTML = `<div class="empty-state compact-empty">没有匹配的动作</div>`;
+    list.innerHTML = `<div class="empty-state compact-empty">${t("没有匹配的动作")}</div>`;
     return;
   }
   list.innerHTML = history.map((item) => `
     <button class="history-action" type="button" data-exercise-history="${escapeAttr(item.name)}">
       <span>
         <strong>${escapeHtml(item.name)}</strong>
-        <small>${item.records.length} 次训练 · ${item.totalSets} 组</small>
+        <small>${workoutCountText(item.records.length)} · ${setCountText(item.totalSets)}</small>
       </span>
-      <span class="history-action-stat">${item.bestWeight ? `${item.bestWeight} lb` : `${item.bestReps || 0} 次`}</span>
+      <span class="history-action-stat">${item.bestWeight ? `${item.bestWeight} lb` : repCountText(item.bestReps || 0)}</span>
     </button>
   `).join("");
 }
@@ -1391,7 +1497,7 @@ function matchesExerciseHistorySearch(item, query) {
   const text = [
     item.name,
     item.bestWeight ? `${item.bestWeight} lb` : "",
-    item.bestReps ? `${item.bestReps} 次` : "",
+    item.bestReps ? repCountText(item.bestReps) : "",
     ...(item.records || []).flatMap((record) => [
       record.workoutTitle,
       record.date,
@@ -1409,15 +1515,15 @@ function openExerciseHistory(name) {
   $("#exerciseHistoryTitle").textContent = item.name;
   $("#exerciseHistoryStats").innerHTML = `
     <article>
-      <span>训练次数</span>
+      <span>${t("训练次数")}</span>
       <strong>${item.records.length}</strong>
     </article>
     <article>
-      <span>最高重量</span>
+      <span>${t("最高重量")}</span>
       <strong>${item.bestWeight ? `${item.bestWeight} lb` : "--"}</strong>
     </article>
     <article>
-      <span>估算 1RM</span>
+      <span>${t("估算 1RM")}</span>
       <strong>${item.bestOneRepMax ? `${item.bestOneRepMax} lb` : "--"}</strong>
     </article>
   `;
@@ -1426,7 +1532,7 @@ function openExerciseHistory(name) {
       <div class="timeline-title">
         <div>
           <strong>${formatDate(record.date)}</strong>
-          <span class="timeline-meta">${escapeHtml(record.workoutTitle || "训练")}</span>
+          <span class="timeline-meta">${escapeHtml(record.workoutTitle || t("训练"))}</span>
         </div>
         ${record.bestSet?.weight ? `<span class="chip">${record.bestSet.weight} lb × ${record.bestSet.reps || 0}</span>` : ""}
       </div>
@@ -1444,27 +1550,27 @@ function formatSetGroups(sets = []) {
   sets.forEach((set) => {
     const weight = Number(set.weight) || 0;
     const reps = Number(set.reps) || 0;
-    const label = weight ? `${weight} lb × ${reps || 0}` : `${reps || 0} 次`;
+    const label = weight ? `${weight} lb × ${reps || 0}` : repCountText(reps || 0);
     const last = groups[groups.length - 1];
     if (last?.label === label) last.count += 1;
     else groups.push({ label, count: 1 });
   });
-  return groups.map((group) => `${group.label} × ${group.count} 组`);
+  return groups.map((group) => `${group.label} × ${setCountText(group.count)}`);
 }
 
 function formatExerciseSummary(exercise) {
   const set = exercise.sets?.[0] || {};
   const parts = [exercise.name];
-  if (exercise.sets?.length) parts.push(`${exercise.sets.length} 组`);
+  if (exercise.sets?.length) parts.push(setCountText(exercise.sets.length));
   if (set.weight) parts.push(`${set.weight} lb`);
-  if (set.reps) parts.push(`${set.reps} 次`);
+  if (set.reps) parts.push(repCountText(set.reps));
   return parts.join(" · ");
 }
 
 function renderMeasurements() {
   const list = $("#bodyList");
   if (!state.measurements.length) {
-    list.innerHTML = `<div class="empty-state">记录体重和腰围后，这里会显示趋势</div>`;
+    list.innerHTML = `<div class="empty-state">${t("记录体重和腰围后，这里会显示趋势")}</div>`;
     return;
   }
   list.innerHTML = state.measurements.map((item) => `
@@ -1472,17 +1578,17 @@ function renderMeasurements() {
       <div class="timeline-title">
         <div>
           <strong>${formatDate(item.date)}</strong>
-          <span class="timeline-meta">${item.notes ? escapeHtml(item.notes) : "身体数据"}</span>
+          <span class="timeline-meta">${item.notes ? escapeHtml(item.notes) : t("身体数据")}</span>
         </div>
         <div class="item-actions">
-          <button class="text-button" type="button" data-edit-body="${item.id}">编辑</button>
-          <button class="danger-link" type="button" data-delete-body="${item.id}">删除</button>
+          <button class="text-button" type="button" data-edit-body="${item.id}">${t("编辑")}</button>
+          <button class="danger-link" type="button" data-delete-body="${item.id}">${t("删除")}</button>
         </div>
       </div>
       <div class="chip-row">
-        ${item.weight ? `<span class="chip">体重 ${formatMeasurementValue(item.weight, "weight")} kg</span>` : ""}
-        ${item.waist ? `<span class="chip">腰围 ${formatMeasurementValue(item.waist, "waist")} cm</span>` : ""}
-        ${item.bodyFat ? `<span class="chip">体脂 ${item.bodyFat}%</span>` : ""}
+        ${item.weight ? `<span class="chip">${t("体重")} ${formatMeasurementValue(item.weight, "weight")} kg</span>` : ""}
+        ${item.waist ? `<span class="chip">${t("腰围")} ${formatMeasurementValue(item.waist, "waist")} cm</span>` : ""}
+        ${item.bodyFat ? `<span class="chip">${t("体脂 %").replace(" %", "")} ${item.bodyFat}%</span>` : ""}
       </div>
     </article>
   `).join("");
@@ -1491,10 +1597,9 @@ function renderMeasurements() {
 function renderPhotos() {
   const grid = $("#photoGrid");
   if (!state.photos.length) {
-    grid.innerHTML = `<div class="empty-state">上传第一张照片，开始记录身材变化</div>`;
+    grid.innerHTML = `<div class="empty-state">${t("上传第一张照片，开始记录身材变化")}</div>`;
     return;
   }
-  const label = { front: "正面", side: "侧面", back: "背面", other: "其他" };
   const groups = groupPhotosByDate(state.photos);
   grid.innerHTML = groups.map(({ date, photos }) => {
     const cover = photos.find((photo) => photo.angle === "front") || photos[0];
@@ -1503,18 +1608,18 @@ function renderPhotos() {
         <h3>${formatDate(date)}</h3>
         <article class="photo-card">
           <button type="button" data-view-photo-day="${date}">
-            <img src="${cover.imageData}" alt="${formatDate(cover.date)} ${label[cover.angle] || "照片"}" loading="lazy" />
+            <img src="${cover.imageData}" alt="${formatDate(cover.date)} ${angleLabel(cover.angle) || t("照片")}" loading="lazy" />
             <div class="photo-caption">
-              <strong>${label[cover.angle] || "其他"}${cover.weight ? ` · ${cover.weight} kg` : ""}</strong>
-              <span class="timeline-meta">${cover.capturedAt ? `拍摄 ${formatDateTime(cover.capturedAt)}` : "照片记录"}</span>
-              <span class="photo-count">${photos.length} 张照片</span>
+              <strong>${angleLabel(cover.angle)}${cover.weight ? ` · ${cover.weight} kg` : ""}</strong>
+              <span class="timeline-meta">${cover.capturedAt ? `${t("拍摄")} ${formatDateTime(cover.capturedAt)}` : t("照片记录")}</span>
+              <span class="photo-count">${photoCountText(photos.length)}</span>
             </div>
           </button>
           ${photos.length > 1 ? `
             <div class="photo-strip">
               ${photos.map((photo) => `
-                <button type="button" data-edit-photo="${photo.id}" title="${label[photo.angle] || "其他"}">
-                  <img src="${photo.imageData}" alt="${label[photo.angle] || "其他"}" loading="lazy" />
+                <button type="button" data-edit-photo="${photo.id}" title="${angleLabel(photo.angle)}">
+                  <img src="${photo.imageData}" alt="${angleLabel(photo.angle)}" loading="lazy" />
                 </button>
               `).join("")}
             </div>
@@ -1526,16 +1631,15 @@ function renderPhotos() {
 }
 
 function openPhotoDay(date) {
-  const label = { front: "正面", side: "侧面", back: "背面", other: "其他" };
   const photos = state.photos
     .filter((photo) => photo.date === date)
     .sort((a, b) => photoAngleRank(a.angle) - photoAngleRank(b.angle));
   if (!photos.length) return;
-  $("#photoDayTitle").textContent = `${formatDate(date)} · ${photos.length} 张照片`;
+  $("#photoDayTitle").textContent = `${formatDate(date)} · ${photoCountText(photos.length)}`;
   $("#photoDayBody").innerHTML = photos.map((photo) => `
     <button class="photo-day-item" type="button" data-edit-photo="${photo.id}">
-      <img src="${photo.imageData}" alt="${label[photo.angle] || "其他"}" loading="lazy" />
-      <span>${label[photo.angle] || "其他"}${photo.weight ? ` · ${formatMeasurementValue(photo.weight, "weight")} kg` : ""}</span>
+      <img src="${photo.imageData}" alt="${angleLabel(photo.angle)}" loading="lazy" />
+      <span>${angleLabel(photo.angle)}${photo.weight ? ` · ${formatMeasurementValue(photo.weight, "weight")} kg` : ""}</span>
     </button>
   `).join("");
   openModal($("#photoDayDialog"));
@@ -1545,7 +1649,7 @@ function renderSleep() {
   const list = $("#sleepList");
   if (!list) return;
   if (!state.sleepEntries.length) {
-    list.innerHTML = `<div class="empty-state">记录一次状态后，这里会显示历史</div>`;
+    list.innerHTML = `<div class="empty-state">${t("记录一次状态后，这里会显示历史")}</div>`;
     return;
   }
   list.innerHTML = state.sleepEntries.map((item) => `
@@ -1556,24 +1660,24 @@ function renderSleep() {
           <span class="timeline-meta">${summarizeSleepImpact(item)}</span>
         </div>
         <div class="item-actions">
-          <button class="text-button" type="button" data-edit-sleep="${item.id}">编辑</button>
-          <button class="danger-link" type="button" data-delete-sleep="${item.id}">删除</button>
+          <button class="text-button" type="button" data-edit-sleep="${item.id}">${t("编辑")}</button>
+          <button class="danger-link" type="button" data-delete-sleep="${item.id}">${t("删除")}</button>
         </div>
       </div>
       <div class="chip-row">
-        ${item.sleepScore ? `<span class="chip">睡眠 ${item.sleepScore}/5</span>` : ""}
-        ${item.afternoonScore ? `<span class="chip">下午 ${item.afternoonScore}/5</span>` : ""}
+        ${item.sleepScore ? `<span class="chip">${t("睡眠")} ${item.sleepScore}/5</span>` : ""}
+        ${item.afternoonScore ? `<span class="chip">${t("下午")} ${item.afternoonScore}/5</span>` : ""}
         ${item.severity ? `<span class="chip">${severityLabel(item.severity)}</span>` : ""}
-        ${(item.symptoms || []).slice(0, 4).map((value) => `<span class="chip">${escapeHtml(value)}</span>`).join("")}
+        ${(item.symptoms || []).slice(0, 4).map((value) => `<span class="chip">${escapeHtml(enumLabel(value))}</span>`).join("")}
       </div>
       ${(item.factors || []).length ? `
         <div class="chip-row">
-          ${(item.factors || []).slice(0, 5).map((value) => `<span class="chip">诱因 ${escapeHtml(value)}</span>`).join("")}
+          ${(item.factors || []).slice(0, 5).map((value) => `<span class="chip">${t("诱因")} ${escapeHtml(enumLabel(value))}</span>`).join("")}
         </div>
       ` : ""}
-      ${item.impactWindow ? `<p class="muted">发生时间：${escapeHtml(item.impactWindow)}</p>` : ""}
-      ${(item.sleepIssues || []).length ? `<p class="muted">睡眠问题：${escapeHtml(item.sleepIssues.join("、"))}</p>` : ""}
-      ${item.wakeFeeling ? `<p class="muted">醒来感觉：${wakeFeelingLabel(item.wakeFeeling)}</p>` : ""}
+      ${item.impactWindow ? `<p class="muted">${t("发生时间")}：${escapeHtml(item.impactWindow)}</p>` : ""}
+      ${(item.sleepIssues || []).length ? `<p class="muted">${t("睡眠问题")}：${escapeHtml(item.sleepIssues.map(enumLabel).join(state.language === "en" ? ", " : "、"))}</p>` : ""}
+      ${item.wakeFeeling ? `<p class="muted">${t("醒来感觉")}：${wakeFeelingLabel(item.wakeFeeling)}</p>` : ""}
       ${item.notes ? `<p class="muted">${escapeHtml(item.notes)}</p>` : ""}
     </article>
   `).join("");
@@ -1581,18 +1685,18 @@ function renderSleep() {
 
 function summarizeSleepImpact(item) {
   const parts = [];
-  if (item.symptoms?.length) parts.push(item.symptoms.slice(0, 2).join("、"));
-  if (item.afternoonScore) parts.push(`下午 ${item.afternoonScore}/5`);
+  if (item.symptoms?.length) parts.push(item.symptoms.slice(0, 2).map(enumLabel).join(state.language === "en" ? ", " : "、"));
+  if (item.afternoonScore) parts.push(`${t("下午")} ${item.afternoonScore}/5`);
   if (item.severity) parts.push(severityLabel(item.severity));
-  return parts.join(" · ") || "状态记录";
+  return parts.join(" · ") || t("状态记录");
 }
 
 function severityLabel(value) {
-  return { mild: "轻", medium: "中", heavy: "重" }[value] || value;
+  return ({ mild: t("轻"), medium: t("中"), heavy: t("重") }[value] || enumLabel(value));
 }
 
 function wakeFeelingLabel(value) {
-  return { tired: "很累", okay: "还行", clear: "清醒" }[value] || value;
+  return ({ tired: t("很累"), okay: t("还行"), clear: t("清醒") }[value] || enumLabel(value));
 }
 
 function groupPhotosByDate(photos) {
@@ -1652,18 +1756,18 @@ function drawLineChart(canvas, data, compact, chartId, globalAxis) {
   ctx.fillStyle = "#66736d";
   ctx.font = "14px sans-serif";
   if (!data.length) {
-    ctx.fillText("暂无身体数据", 18, 32);
+    ctx.fillText(t("暂无身体数据"), 18, 32);
     return;
   }
 
   const series = [
-    { key: "weight", label: "体重", color: "#1f6f5b", unit: "kg" },
-    { key: "waist", label: "腰围", color: "#c96f36", unit: "cm" },
+    { key: "weight", label: t("体重"), color: "#1f6f5b", unit: "kg" },
+    { key: "waist", label: t("腰围"), color: "#c96f36", unit: "cm" },
   ].map((s) => ({ ...s, points: data.filter((item) => item[s.key]).map((item) => ({ date: item.date, value: item[s.key] })) }))
     .filter((s) => s.points.length);
 
   if (!series.length) {
-    ctx.fillText("暂无可绘制的数据", 18, 32);
+    ctx.fillText(t("暂无可绘制的数据"), 18, 32);
     return;
   }
 
@@ -1702,8 +1806,8 @@ function drawLineChart(canvas, data, compact, chartId, globalAxis) {
   const weightSeries = series.find((s) => s.key === "weight");
   const waistSeries = series.find((s) => s.key === "waist");
   ctx.lineWidth = 1;
-  drawYAxis(ctx, sharedAxis, left, top, plotH, yTicks, "left", weightSeries?.color || "#9eaaa4", "体重/kg");
-  drawYAxis(ctx, sharedAxis, width - right, top, plotH, yTicks, "right", waistSeries?.color || "#9eaaa4", "腰围/cm");
+  drawYAxis(ctx, sharedAxis, left, top, plotH, yTicks, "left", weightSeries?.color || "#9eaaa4", t("体重/kg"));
+  drawYAxis(ctx, sharedAxis, width - right, top, plotH, yTicks, "right", waistSeries?.color || "#9eaaa4", t("腰围/cm"));
 
   ctx.strokeStyle = "#bac6c0";
   ctx.lineWidth = 1.2;
@@ -2012,7 +2116,7 @@ function openCreateDialog(id) {
 
 function resetWorkoutForm(workout) {
   renderTemplateOptions();
-  $("#workoutDialogTitle").textContent = workout ? "编辑训练" : "记录训练";
+  $("#workoutDialogTitle").textContent = workout ? t("编辑训练") : t("记录训练");
   $("#workoutId").value = workout?.id || "";
   $("#workoutDate").value = workout?.date || today();
   $("#workoutTitle").value = workout?.title || "";
@@ -2110,7 +2214,7 @@ async function openWorkoutFromTemplate(template) {
   };
   resetWorkoutForm(draft);
   $("#workoutId").value = "";
-  $("#workoutDialogTitle").textContent = "从模板记录";
+  $("#workoutDialogTitle").textContent = t("从模板记录");
   $("#deleteWorkoutButton").classList.add("hidden");
   if (!$("#workoutDialog").open) openModal($("#workoutDialog"));
 }
@@ -2135,14 +2239,15 @@ function openTemplateDetail(template) {
         </div>
       </article>
     `).join("")
-    : `<div class="empty-state compact-empty">这个模板还没有动作。</div>`;
+    : `<div class="empty-state compact-empty">${t("这个模板还没有动作。")}</div>`;
   openModal($("#templateDetailDialog"));
 }
 
 async function deleteWorkoutTemplate(id) {
   const template = state.templates.find((item) => item.id === id);
   if (!template) return;
-  if (!await showConfirm(`确定删除模板「${template.title}」？`, { title: "删除模板", confirmText: "删除", danger: true })) return;
+  const message = state.language === "en" ? `Delete template "${template.title}"?` : `确定删除模板「${template.title}」？`;
+  if (!await showConfirm(message, { title: "删除模板", confirmText: "删除", danger: true })) return;
   await remove("templates", id);
   if (state.cloudReady) await enqueueSync("template", "delete", { id });
   await loadData();
@@ -2158,7 +2263,7 @@ function copyWorkout(workout) {
     ...source,
     id: "",
     date: today(),
-    title: `${workout.title} 复制`,
+    title: state.language === "en" ? `${workout.title} copy` : `${workout.title} 复制`,
     createdAt: now,
     updatedAt: now,
     exercises: (workout.exercises || []).map((exercise) => ({
@@ -2169,7 +2274,7 @@ function copyWorkout(workout) {
   };
   resetWorkoutForm(clone);
   $("#workoutId").value = "";
-  $("#workoutDialogTitle").textContent = "复制训练";
+  $("#workoutDialogTitle").textContent = t("复制训练");
   $("#deleteWorkoutButton").classList.add("hidden");
   openModal($("#workoutDialog"));
 }
@@ -2379,7 +2484,7 @@ async function saveWorkout(event) {
 }
 
 function resetBodyForm(item) {
-  $("#bodyDialogTitle").textContent = item ? "编辑身体数据" : "身体数据";
+  $("#bodyDialogTitle").textContent = item ? t("编辑身体数据") : t("身体数据");
   $("#bodyId").value = item?.id || "";
   $("#bodyDate").value = item?.date || today();
   ["Weight", "Waist", "Chest", "Hips", "Thigh", "Arm", "Fat"].forEach((name) => {
@@ -2443,7 +2548,7 @@ function setCheckboxValues(name, values = [], root = document) {
 }
 
 function resetSleepForm(item) {
-  $("#sleepDialogTitle").textContent = item ? "编辑状态记录" : "状态记录";
+  $("#sleepDialogTitle").textContent = item ? t("编辑状态记录") : t("状态记录");
   $("#sleepId").value = item?.id || "";
   $("#sleepDate").value = item?.date || today();
   $("#sleepScore").value = item?.sleepScore || "";
@@ -2492,7 +2597,8 @@ async function saveSleep(event) {
 }
 
 async function deleteSleepRecord(id) {
-  if (id && await showConfirm("确定删除这条状态记录？", { title: "删除状态记录", confirmText: "删除", danger: true })) {
+  const message = state.language === "en" ? "Delete this status entry?" : "确定删除这条状态记录？";
+  if (id && await showConfirm(message, { title: "删除状态记录", confirmText: "删除", danger: true })) {
     await remove("sleep", id);
     if (state.cloudReady) await enqueueSync("sleep", "delete", { id });
     if ($("#sleepDialog").open) closeModal($("#sleepDialog"));
@@ -2540,7 +2646,8 @@ function setupPhotoForm() {
   $("#photoForm").addEventListener("submit", savePhoto);
   $("#deletePhotoButton").addEventListener("click", async () => {
     const id = $("#photoId").value;
-    if (id && await showConfirm("确定删除这张照片？", { title: "删除照片", confirmText: "删除", danger: true })) {
+    const message = state.language === "en" ? "Delete this photo?" : "确定删除这张照片？";
+    if (id && await showConfirm(message, { title: "删除照片", confirmText: "删除", danger: true })) {
       const photo = state.photos.find((item) => item.id === id);
       await remove("photos", id);
       if (state.cloudReady) await enqueueSync("photo", "delete", { id, imagePath: photo?.imagePath || "" });
@@ -2553,8 +2660,8 @@ function setupPhotoForm() {
 function renderPhotoPreview() {
   const preview = $("#photoPreview");
   preview.innerHTML = state.draftPhotoData
-    ? `<img src="${state.draftPhotoData}" alt="照片预览" />`
-    : "选择照片后会显示预览";
+    ? `<img src="${state.draftPhotoData}" alt="${t("照片预览")}" />`
+    : t("选择照片后会显示预览");
   preview.classList.toggle("empty-state", !state.draftPhotoData);
 }
 
@@ -2764,7 +2871,8 @@ function setupEditHandlers() {
 }
 
 async function deleteWorkout(id) {
-  if (id && await showConfirm("确定删除这次训练？", { title: "删除训练", confirmText: "删除", danger: true })) {
+  const message = state.language === "en" ? "Delete this workout?" : "确定删除这次训练？";
+  if (id && await showConfirm(message, { title: "删除训练", confirmText: "删除", danger: true })) {
     await remove("workouts", id);
     if (state.cloudReady) await enqueueSync("workout", "delete", { id });
     if ($("#workoutDialog").open) closeModal($("#workoutDialog"));
@@ -2773,7 +2881,8 @@ async function deleteWorkout(id) {
 }
 
 async function deleteBodyMeasurement(id) {
-  if (id && await showConfirm("确定删除这条身体数据？", { title: "删除身体数据", confirmText: "删除", danger: true })) {
+  const message = state.language === "en" ? "Delete this body data entry?" : "确定删除这条身体数据？";
+  if (id && await showConfirm(message, { title: "删除身体数据", confirmText: "删除", danger: true })) {
     await remove("measurements", id);
     if (state.cloudReady) await enqueueSync("measurement", "delete", { id });
     if ($("#bodyDialog").open) closeModal($("#bodyDialog"));
@@ -2957,7 +3066,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=82", { updateViaCache: "none" })
+      .register("service-worker.js?v=83", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
