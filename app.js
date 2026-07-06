@@ -308,6 +308,7 @@ async function applySyncJob(job) {
   if (job.type === "measurement" && job.action === "upsert") await saveMeasurementCloud(job.payload);
   if (job.type === "photo" && job.action === "upsert") await savePhotoCloud(job.payload);
   if (job.type === "sleep" && job.action === "upsert") await saveSleepCloud(job.payload);
+  if (job.type === "template" && job.action === "upsert") await saveTemplateCloud(job.payload);
   if (job.type === "workout" && job.action === "delete") {
     const result = await state.supabase.from("workouts").delete().eq("id", job.recordId);
     if (result.error) throw result.error;
@@ -326,6 +327,10 @@ async function applySyncJob(job) {
   }
   if (job.type === "sleep" && job.action === "delete") {
     const result = await state.supabase.from("sleep_records").delete().eq("id", job.recordId);
+    if (result.error) throw result.error;
+  }
+  if (job.type === "template" && job.action === "delete") {
+    const result = await state.supabase.from("workout_templates").delete().eq("id", job.recordId);
     if (result.error) throw result.error;
   }
 }
@@ -377,23 +382,26 @@ async function loadCloudData() {
   await processSyncQueue();
   if (state.pendingSyncCount) return;
   setSyncStatus("syncing", "正在同步");
-  const [workoutsResult, bodyResult, photosResult, sleepResult] = await Promise.all([
+  const [workoutsResult, bodyResult, photosResult, sleepResult, templatesResult] = await Promise.all([
     state.supabase.from("workouts").select("*").order("date", { ascending: false }),
     state.supabase.from("body_measurements").select("*").order("date", { ascending: false }),
     state.supabase.from("progress_photos").select("*").order("date", { ascending: false }),
     state.supabase.from("sleep_records").select("*").order("date", { ascending: false }),
+    state.supabase.from("workout_templates").select("*").order("title", { ascending: true }),
   ]);
-  if (workoutsResult.error || bodyResult.error || photosResult.error) {
+  if (workoutsResult.error || bodyResult.error || photosResult.error || templatesResult.error) {
     setSyncStatus("error", "同步失败");
     await showMessage("云端数据读取失败，请检查 Supabase 表和权限规则");
     return;
   }
   state.workouts = workoutsResult.data.map(fromWorkoutRow).sort(compareRecordsDesc);
+  state.templates = templatesResult.data.map(fromTemplateRow).sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
   state.measurements = bodyResult.data.map(fromMeasurementRow).sort(compareRecordsDesc);
   state.photos = (await Promise.all(photosResult.data.map(fromPhotoRow))).sort(compareRecordsDesc);
   if (!sleepResult.error) state.sleepEntries = sleepResult.data.map(fromSleepRow).sort(compareRecordsDesc);
   await Promise.all([
     replaceStore("workouts", state.workouts),
+    replaceStore("templates", state.templates),
     replaceStore("measurements", state.measurements),
     replaceStore("photos", state.photos),
     ...(sleepResult.error ? [] : [replaceStore("sleep", state.sleepEntries)]),
@@ -716,6 +724,33 @@ function fromWorkoutRow(row) {
   return {
     id: row.id,
     date: row.date,
+    title: row.title,
+    durationMinutes: row.duration_minutes ?? undefined,
+    intensity: row.intensity ?? undefined,
+    notes: row.notes || "",
+    exercises: row.exercises || [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toTemplateRow(item) {
+  return {
+    id: item.id,
+    user_id: state.user.id,
+    title: item.title,
+    duration_minutes: item.durationMinutes ?? null,
+    intensity: item.intensity ?? null,
+    notes: item.notes || null,
+    exercises: item.exercises || [],
+    created_at: item.createdAt || new Date().toISOString(),
+    updated_at: item.updatedAt || new Date().toISOString(),
+  };
+}
+
+function fromTemplateRow(row) {
+  return {
+    id: row.id,
     title: row.title,
     durationMinutes: row.duration_minutes ?? undefined,
     intensity: row.intensity ?? undefined,
@@ -1790,6 +1825,7 @@ async function saveWorkoutTemplate() {
     updatedAt: now,
   };
   await put("templates", template);
+  if (state.cloudReady) await enqueueSync("template", "upsert", template);
   state.templates = (await getAll("templates")).sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
   renderTemplateOptions();
   $("#templateSelect").value = template.id;
@@ -1850,6 +1886,7 @@ async function deleteWorkoutTemplate(id) {
   if (!template) return;
   if (!await showConfirm(`确定删除模板「${template.title}」？`, { title: "删除模板", confirmText: "删除", danger: true })) return;
   await remove("templates", id);
+  if (state.cloudReady) await enqueueSync("template", "delete", { id });
   await loadData();
 }
 
@@ -2489,6 +2526,16 @@ async function saveWorkoutCloud(workout) {
   setSyncStatus("synced", "已同步");
 }
 
+async function saveTemplateCloud(template) {
+  setSyncStatus("syncing", "正在同步");
+  const { error } = await state.supabase.from("workout_templates").upsert(toTemplateRow(template));
+  if (error) {
+    setSyncStatus("error", "同步失败");
+    throw error;
+  }
+  setSyncStatus("synced", "已同步");
+}
+
 async function saveMeasurementCloud(measurement) {
   setSyncStatus("syncing", "正在同步");
   const { error } = await state.supabase.from("body_measurements").upsert(toMeasurementRow(measurement));
@@ -2534,8 +2581,9 @@ async function savePhotoCloud(photo) {
 
 async function uploadLocalDataToCloud() {
   if (!hasCloud()) return;
-  const [workouts, measurements, photos, sleepEntries] = await Promise.all([
+  const [workouts, templates, measurements, photos, sleepEntries] = await Promise.all([
     getAll("workouts"),
+    getAll("templates"),
     getAll("measurements"),
     getAll("photos"),
     getAll("sleep"),
@@ -2543,6 +2591,7 @@ async function uploadLocalDataToCloud() {
   try {
     setSyncStatus("syncing", "正在同步");
     for (const workout of workouts) await saveWorkoutCloud(workout);
+    for (const template of templates) await saveTemplateCloud(template);
     for (const measurement of measurements) await saveMeasurementCloud(measurement);
     for (const photo of photos) await savePhotoCloud(photo);
     for (const entry of sleepEntries) await saveSleepCloud(entry);
@@ -2642,7 +2691,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=79", { updateViaCache: "none" })
+      .register("service-worker.js?v=80", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }

@@ -57,6 +57,18 @@ create table if not exists public.sleep_records (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.workout_templates (
+  id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  duration_minutes numeric,
+  intensity numeric,
+  notes text,
+  exercises jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.progress_photos
 add column if not exists captured_at timestamptz;
 
@@ -68,6 +80,7 @@ alter table public.workouts enable row level security;
 alter table public.body_measurements enable row level security;
 alter table public.progress_photos enable row level security;
 alter table public.sleep_records enable row level security;
+alter table public.workout_templates enable row level security;
 
 drop policy if exists "workouts are owned by user" on public.workouts;
 create policy "workouts are owned by user"
@@ -93,6 +106,13 @@ with check (auth.uid() = user_id);
 drop policy if exists "sleep records are owned by user" on public.sleep_records;
 create policy "sleep records are owned by user"
 on public.sleep_records
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "workout templates are owned by user" on public.workout_templates;
+create policy "workout templates are owned by user"
+on public.workout_templates
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
