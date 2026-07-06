@@ -1268,7 +1268,7 @@ function renderPhotos() {
       <section class="photo-date-group">
         <h3>${formatDate(date)}</h3>
         <article class="photo-card">
-          <button type="button" data-edit-photo="${cover.id}">
+          <button type="button" data-view-photo-day="${date}">
             <img src="${cover.imageData}" alt="${formatDate(cover.date)} ${label[cover.angle] || "照片"}" loading="lazy" />
             <div class="photo-caption">
               <strong>${label[cover.angle] || "其他"}${cover.weight ? ` · ${cover.weight} kg` : ""}</strong>
@@ -1289,6 +1289,22 @@ function renderPhotos() {
       </section>
     `;
   }).join("");
+}
+
+function openPhotoDay(date) {
+  const label = { front: "正面", side: "侧面", back: "背面", other: "其他" };
+  const photos = state.photos
+    .filter((photo) => photo.date === date)
+    .sort((a, b) => photoAngleRank(a.angle) - photoAngleRank(b.angle));
+  if (!photos.length) return;
+  $("#photoDayTitle").textContent = `${formatDate(date)} · ${photos.length} 张照片`;
+  $("#photoDayBody").innerHTML = photos.map((photo) => `
+    <button class="photo-day-item" type="button" data-edit-photo="${photo.id}">
+      <img src="${photo.imageData}" alt="${label[photo.angle] || "其他"}" loading="lazy" />
+      <span>${label[photo.angle] || "其他"}${photo.weight ? ` · ${formatMeasurementValue(photo.weight, "weight")} kg` : ""}</span>
+    </button>
+  `).join("");
+  openModal($("#photoDayDialog"));
 }
 
 function renderSleep() {
@@ -2422,6 +2438,7 @@ function setupEditHandlers() {
     const homeStateMetric = event.target.closest("[data-home-state]");
     const workoutButton = event.target.closest("[data-edit-workout]");
     const bodyButton = event.target.closest("[data-edit-body]");
+    const photoDayButton = event.target.closest("[data-view-photo-day]");
     const photoButton = event.target.closest("[data-edit-photo]");
     const sleepButton = event.target.closest("[data-edit-sleep]");
     const deleteSleepButton = event.target.closest("[data-delete-sleep]");
@@ -2479,6 +2496,11 @@ function setupEditHandlers() {
       openExerciseHistory(exerciseHistoryButton.dataset.exerciseHistory);
       return;
     }
+    if (photoDayButton) {
+      event.stopPropagation();
+      openPhotoDay(photoDayButton.dataset.viewPhotoDay);
+      return;
+    }
     if (workoutButton) {
       resetWorkoutForm(state.workouts.find((item) => item.id === workoutButton.dataset.editWorkout));
       openModal($("#workoutDialog"));
@@ -2488,6 +2510,7 @@ function setupEditHandlers() {
       openModal($("#bodyDialog"));
     }
     if (photoButton) {
+      closeModal($("#photoDayDialog"));
       resetPhotoForm(state.photos.find((item) => item.id === photoButton.dataset.editPhoto));
       openModal($("#photoDialog"));
     }
@@ -2691,7 +2714,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=80", { updateViaCache: "none" })
+      .register("service-worker.js?v=81", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }

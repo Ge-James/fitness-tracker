@@ -827,6 +827,37 @@ canvas {
   padding: 10px;
 }
 
+.photo-day-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.photo-day-item {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+
+.photo-day-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.photo-day-item span {
+  display: block;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .photo-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

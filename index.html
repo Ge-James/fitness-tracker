@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=80" />
+    <link rel="stylesheet" href="styles.css?v=81" />
   </head>
   <body>
     <div class="app-shell">
@@ -400,6 +400,16 @@
       </form>
     </dialog>
 
+    <dialog id="photoDayDialog">
+      <div class="dialog-card">
+        <div class="dialog-head">
+          <h2 id="photoDayTitle">当天照片</h2>
+          <button class="icon-button" value="cancel" type="button" data-close="photoDayDialog" aria-label="关闭">×</button>
+        </div>
+        <div id="photoDayBody" class="photo-day-grid"></div>
+      </div>
+    </dialog>
+
     <dialog id="backupDialog">
       <form method="dialog" class="dialog-card" id="backupForm">
         <div class="dialog-head">
@@ -448,6 +458,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=80"></script>
+    <script src="app.js?v=81"></script>
   </body>
 </html>
