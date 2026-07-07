@@ -491,7 +491,11 @@ function uid() {
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function compareRecordsDesc(a, b) {
@@ -1230,15 +1234,16 @@ function renderHome() {
   $("#todayLabel").textContent = "";
   $("#homeTitle").innerHTML = `今日 <span class="home-title-date">- ${todayText}</span>`;
 
-  const latest = state.measurements[0];
-  const previous = state.measurements[1];
-  const latestDate = latest?.date ? formatShortDate(latest.date) : "";
-  $("#weightMetricDate").textContent = latestDate ? `- ${latestDate}` : "";
-  $("#waistMetricDate").textContent = latestDate ? `- ${latestDate}` : "";
-  $("#latestWeight").textContent = latest?.weight ? `${formatMeasurementValue(latest.weight, "weight")} kg` : "--";
-  $("#latestWaist").textContent = latest?.waist ? `${formatMeasurementValue(latest.waist, "waist")} cm` : "--";
-  $("#weightDelta").textContent = deltaText(latest?.weight, previous?.weight, "kg", "weight");
-  $("#waistDelta").textContent = deltaText(latest?.waist, previous?.waist, "cm", "waist");
+  const weightRecords = recordsWithMetric("weight");
+  const waistRecords = recordsWithMetric("waist");
+  const latestWeight = weightRecords[0];
+  const latestWaist = waistRecords[0];
+  $("#weightMetricDate").textContent = latestWeight?.date ? `- ${formatShortDate(latestWeight.date)}` : "";
+  $("#waistMetricDate").textContent = latestWaist?.date ? `- ${formatShortDate(latestWaist.date)}` : "";
+  $("#latestWeight").textContent = latestWeight?.weight ? `${formatMeasurementValue(latestWeight.weight, "weight")} kg` : "--";
+  $("#latestWaist").textContent = latestWaist?.waist ? `${formatMeasurementValue(latestWaist.waist, "waist")} cm` : "--";
+  $("#weightDelta").textContent = deltaText(latestWeight?.weight, weightRecords[1]?.weight, "kg", "weight");
+  $("#waistDelta").textContent = deltaText(latestWaist?.waist, waistRecords[1]?.waist, "cm", "waist");
 
   const latestSleep = latestSleepForHome();
   $("#stateMetricDate").textContent = latestSleep?.date ? `- ${formatShortDate(latestSleep.date)}` : "";
@@ -1278,6 +1283,10 @@ function renderHome() {
 
 function latestSleepForHome() {
   return state.sleepEntries.find((item) => item.afternoonScore) || state.sleepEntries[0];
+}
+
+function recordsWithMetric(key) {
+  return state.measurements.filter((item) => item[key] !== undefined && item[key] !== null && item[key] !== "");
 }
 
 function deltaText(current, previous, unit, key) {
@@ -3066,7 +3075,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=83", { updateViaCache: "none" })
+      .register("service-worker.js?v=84", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
