@@ -1238,6 +1238,24 @@ details label {
   margin-right: auto;
 }
 
+.workout-action-title {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.workout-title-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.compact-save-button {
+  min-height: 36px;
+  padding: 8px 14px;
+}
+
 .full {
   width: 100%;
 }

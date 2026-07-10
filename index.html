@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1f6f5b" />
     <title>健身追踪</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=84" />
+    <link rel="stylesheet" href="styles.css?v=85" />
   </head>
   <body>
     <div class="app-shell">
@@ -171,22 +171,25 @@
         <input type="hidden" id="workoutId" />
         <label>日期<input id="workoutDate" type="date" required /></label>
         <label>标题<input id="workoutTitle" type="text" placeholder="例如 胸肩三头" required /></label>
-        <div class="field-row workout-basics">
-          <label>时长 分钟<input id="workoutDuration" type="number" min="0" inputmode="decimal" /></label>
-          <label>强度 1-10<input id="workoutIntensity" type="number" min="1" max="10" inputmode="decimal" /></label>
-        </div>
-        <label>备注<textarea id="workoutNotes" rows="2"></textarea></label>
         <p class="record-meta hidden" id="workoutMeta"></p>
         <div class="template-tools">
           <select id="templateSelect" aria-label="训练模板"></select>
           <button class="secondary-button" id="useTemplateButton" type="button">使用模板</button>
           <button class="text-button" id="saveTemplateButton" type="button">保存为模板</button>
         </div>
-        <div class="section-title compact">
+        <div class="section-title compact workout-action-title">
           <h3>动作</h3>
-          <button class="text-button" id="addExerciseButton" type="button">添加动作</button>
+          <div class="workout-title-actions">
+            <button class="text-button" id="addExerciseButton" type="button">添加动作</button>
+            <button class="primary-button compact-save-button" type="submit">保存</button>
+          </div>
         </div>
         <div id="exerciseEditor" class="exercise-editor"></div>
+        <div class="field-row workout-basics">
+          <label>时长 分钟<input id="workoutDuration" type="number" min="0" inputmode="decimal" /></label>
+          <label>强度 1-10<input id="workoutIntensity" type="number" min="1" max="10" inputmode="decimal" /></label>
+        </div>
+        <label>备注<textarea id="workoutNotes" rows="2"></textarea></label>
         <div class="dialog-actions">
           <button class="danger-button hidden" id="deleteWorkoutButton" type="button">删除</button>
           <button class="secondary-button" type="button" data-close="workoutDialog">取消</button>
@@ -459,6 +462,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=84"></script>
+    <script src="app.js?v=85"></script>
   </body>
 </html>

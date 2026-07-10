@@ -3075,7 +3075,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=84", { updateViaCache: "none" })
+      .register("service-worker.js?v=85", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
