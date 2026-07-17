@@ -2424,7 +2424,7 @@ function setupWorkoutForm() {
       return;
     }
     if (event.target.closest(".add-set")) addSetEditor(event.target.closest(".exercise-card"));
-    if (event.target.classList.contains("set-count")) {
+    if (event.target.matches(".set-weight, .set-reps, .set-count")) {
       setTimeout(() => event.target.select(), 0);
     }
     if (event.target.closest(".remove-set")) {
@@ -2435,7 +2435,7 @@ function setupWorkoutForm() {
     if (event.target.closest(".remove-exercise")) event.target.closest(".exercise-card").remove();
   });
   $("#exerciseEditor").addEventListener("focusin", (event) => {
-    if (event.target.classList.contains("set-count")) {
+    if (event.target.matches(".set-weight, .set-reps, .set-count")) {
       event.target.select();
       return;
     }
@@ -3075,7 +3075,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=85", { updateViaCache: "none" })
+      .register("service-worker.js?v=86", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }

@@ -1160,6 +1160,13 @@ details label {
   color: #a33a2e;
 }
 
+@media (max-width: 720px) {
+  .exercise-suggestions {
+    position: static;
+    max-height: 180px;
+  }
+}
+
 .exercise-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
