@@ -1334,7 +1334,7 @@ function renderWorkouts() {
           ${workout.intensity ? `<span class="chip">${intensityText(workout.intensity)}</span>` : ""}
         </div>
         <div class="chip-row">
-          ${workout.exercises.slice(0, 4).map((item) => `<span class="chip">${escapeHtml(formatExerciseSummary(item))}</span>`).join("")}
+          ${workout.exercises.map((item) => `<span class="chip">${escapeHtml(formatExerciseSummary(item))}</span>`).join("")}
         </div>
       </article>
     `;
@@ -3075,7 +3075,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=86", { updateViaCache: "none" })
+      .register("service-worker.js?v=87", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
