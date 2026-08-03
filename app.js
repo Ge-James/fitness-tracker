@@ -71,6 +71,8 @@ const TEXT_EN = {
   "日期": "Date",
   "标题": "Title",
   "时长 分钟": "Duration min",
+  "时间 分钟": "Time min",
+  "心率": "Heart rate",
   "强度 1-10": "Intensity 1-10",
   "备注": "Notes",
   "选择模板": "Choose template",
@@ -221,7 +223,7 @@ const TEXT_EN = {
   "模板至少需要一个完整动作": "A template needs at least one complete exercise",
   "已保存为训练模板": "Saved as workout template",
   "请先选择一个模板": "Choose a template first",
-  "至少添加一个动作，并填写重量、次数、组数或备注": "Add at least one exercise and fill weight, reps, sets, or notes",
+  "至少添加一个动作，并填写重量、次数、组数、时间、心率或备注": "Add at least one exercise and fill weight, reps, sets, time, heart rate, or notes",
   "请选择一张照片": "Choose a photo first",
   "还没有状态记录": "No status entries yet",
   "照片预览": "Photo preview",
@@ -233,6 +235,7 @@ const TEXT_EN = {
   "拉伸/恢复": "Mobility",
   "动作备注": "Exercise notes",
   "删除动作": "Delete exercise",
+  "删除组": "Delete set",
   "例如 胸肩三头": "e.g. Chest and shoulders",
   "例如 卧推": "e.g. Bench press",
   "例如 13:00-17:00": "e.g. 13:00-17:00",
@@ -983,7 +986,13 @@ function applyExerciseSuggestion(input, exercise) {
   if (!match) return;
   const card = input.closest(".exercise-card");
   const type = $(".exercise-type", card);
-  if (type) type.value = match.type;
+  if (type) {
+    const nextType = match.type;
+    const changed = type.value !== nextType;
+    type.value = nextType;
+    updateExerciseCardType(card);
+    if (changed) rebuildExerciseSetRows(card);
+  }
   hideExerciseSuggestions(card);
 }
 
@@ -1265,7 +1274,8 @@ function renderHome() {
   target.setAttribute("role", "button");
   target.setAttribute("tabindex", "0");
   const setCount = recent.exercises.reduce((sum, item) => sum + (item.setCount || item.sets.length), 0);
-  const summaryParts = [actionCount(recent.exercises.length), setCountText(setCount)];
+  const summaryParts = [actionCount(recent.exercises.length)];
+  if (setCount) summaryParts.push(setCountText(setCount));
   if (recent.durationMinutes) summaryParts.push(minuteText(recent.durationMinutes));
   target.innerHTML = `
     <div class="timeline-title recent-workout-title">
@@ -1329,7 +1339,7 @@ function renderWorkouts() {
         ${workout.notes ? `<p class="muted">${escapeHtml(workout.notes)}</p>` : ""}
         <div class="chip-row">
           <span class="chip">${actionCount(workout.exercises.length)}</span>
-          <span class="chip">${setCountText(setCount)}</span>
+          ${setCount ? `<span class="chip">${setCountText(setCount)}</span>` : ""}
           ${workout.durationMinutes ? `<span class="chip">${minuteText(workout.durationMinutes)}</span>` : ""}
           ${workout.intensity ? `<span class="chip">${intensityText(workout.intensity)}</span>` : ""}
         </div>
@@ -1557,6 +1567,16 @@ function openExerciseHistory(name) {
 function formatSetGroups(sets = []) {
   const groups = [];
   sets.forEach((set) => {
+    if (set.durationMinutes || set.heartRate) {
+      const label = [
+        set.durationMinutes ? minuteText(set.durationMinutes) : "",
+        set.heartRate ? `${t("心率")} ${set.heartRate}` : "",
+      ].filter(Boolean).join(" · ");
+      const last = groups[groups.length - 1];
+      if (last?.label === label) last.count += 1;
+      else groups.push({ label, count: 1 });
+      return;
+    }
     const weight = Number(set.weight) || 0;
     const reps = Number(set.reps) || 0;
     const label = weight ? `${weight} lb × ${reps || 0}` : repCountText(reps || 0);
@@ -1570,6 +1590,12 @@ function formatSetGroups(sets = []) {
 function formatExerciseSummary(exercise) {
   const set = exercise.sets?.[0] || {};
   const parts = [exercise.name];
+  if (exercise.type === "cardio" || exercise.type === "timed") {
+    if (exercise.sets?.length > 1) parts.push(setCountText(exercise.sets.length));
+    if (set.durationMinutes) parts.push(minuteText(set.durationMinutes));
+    if (set.heartRate) parts.push(`${t("心率")} ${set.heartRate}`);
+    return parts.join(" · ");
+  }
   if (exercise.sets?.length) parts.push(setCountText(exercise.sets.length));
   if (set.weight) parts.push(`${set.weight} lb`);
   if (set.reps) parts.push(repCountText(set.reps));
@@ -2142,26 +2168,38 @@ function getWorkoutFormExercises() {
   return $$(".exercise-card").map((card) => {
     const type = $(".exercise-type", card).value;
     const notes = $(".exercise-notes", card)?.value.trim() || "";
-    const sets = $$(".exercise-set-row", card).flatMap((row) => {
-      const weight = num($(".set-weight", row)?.value);
-      const reps = num($(".set-reps", row)?.value);
-      const count = Math.max(1, Math.floor(num($(".set-count", row)?.value) || 1));
-      if (!weight && !reps) return [];
-      return Array.from({ length: count }, () => ({
-        id: uid(),
-        weight,
-        reps,
-      }));
-    });
+    const sets = type === "cardio"
+      ? $$(".exercise-set-row", card).flatMap((row) => {
+        const durationMinutes = num($(".set-duration", row)?.value);
+        const heartRate = num($(".set-heart-rate", row)?.value);
+        if (!durationMinutes && !heartRate) return [];
+        return [{
+          id: uid(),
+          durationMinutes,
+          heartRate,
+        }];
+      })
+      : $$(".exercise-set-row", card).flatMap((row) => {
+        const weight = num($(".set-weight", row)?.value);
+        const reps = num($(".set-reps", row)?.value);
+        const count = Math.max(1, Math.floor(num($(".set-count", row)?.value) || 1));
+        if (!weight && !reps) return [];
+        return Array.from({ length: count }, () => ({
+          id: uid(),
+          weight,
+          reps,
+        }));
+      });
+    const name = $(".exercise-name", card).value.trim();
     return {
       id: card.dataset.exerciseId || uid(),
-      name: $(".exercise-name", card).value.trim(),
+      name,
       type,
       setCount: sets.length,
       notes,
       sets,
     };
-  }).filter((exercise) => exercise.name && exercise.sets.length);
+  }).filter((exercise) => exercise.name && (exercise.sets.length || exercise.notes || exercise.type === "cardio"));
 }
 
 function cloneTemplateExercises(exercises = []) {
@@ -2318,23 +2356,31 @@ function addExerciseEditor(exercise = newExercise(), atTop = true) {
     </div>
   `;
   $(".exercise-type", card).value = exercise.type === "timed" ? "cardio" : exercise.type || "strength";
+  updateExerciseCardType(card);
   getExerciseSetRows(exercise).forEach((set, index) => addSetEditor(card, set, index));
   if (atTop) $("#exerciseEditor").prepend(card);
   else $("#exerciseEditor").appendChild(card);
 }
 
 function addSetEditor(card, set = {}, index) {
-  const previousSet = set.weight || set.reps ? null : getLastSetValues(card);
+  const type = $(".exercise-type", card)?.value || "strength";
+  const isCardio = type === "cardio";
+  const previousSet = set.weight || set.reps || set.durationMinutes || set.heartRate ? null : getLastSetValues(card);
   const values = previousSet || set;
   const row = document.createElement("div");
-  row.className = "exercise-set-row";
+  row.className = `exercise-set-row${isCardio ? " cardio-set-row" : ""}`;
   row.dataset.setId = set.id || uid();
-  row.innerHTML = `
+  row.innerHTML = isCardio ? `
     <span class="set-number">${index === undefined ? $(".exercise-set-row", card).parentElement?.children.length + 1 || "" : index + 1}</span>
-    <label>重量 lb<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${values.weight || ""}" /></label>
-    <label>次数<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${values.reps || ""}" /></label>
-    <label>组数<input class="set-count" type="number" step="1" min="1" inputmode="numeric" value="${values.count || 1}" /></label>
-    <button class="icon-button remove-set" type="button" aria-label="删除组">×</button>
+    <label>${t("时间 分钟")}<input class="set-duration" type="number" step="1" min="0" inputmode="decimal" value="${values.durationMinutes || ""}" /></label>
+    <label>${t("心率")}<input class="set-heart-rate" type="number" step="1" min="0" inputmode="numeric" value="${values.heartRate || ""}" /></label>
+    <button class="icon-button remove-set" type="button" aria-label="${t("删除组")}">×</button>
+  ` : `
+    <span class="set-number">${index === undefined ? $(".exercise-set-row", card).parentElement?.children.length + 1 || "" : index + 1}</span>
+    <label>${t("重量 lb")}<input class="set-weight" type="number" step="0.5" min="0" inputmode="decimal" value="${values.weight || ""}" /></label>
+    <label>${t("次数")}<input class="set-reps" type="number" step="1" min="0" inputmode="numeric" value="${values.reps || ""}" /></label>
+    <label>${t("组数")}<input class="set-count" type="number" step="1" min="1" inputmode="numeric" value="${values.count || 1}" /></label>
+    <button class="icon-button remove-set" type="button" aria-label="${t("删除组")}">×</button>
   `;
   $(".exercise-sets", card).appendChild(row);
   refreshSetNumbers(card);
@@ -2342,6 +2388,13 @@ function addSetEditor(card, set = {}, index) {
 
 function getExerciseSetRows(exercise) {
   const sets = exercise.sets?.length ? exercise.sets : [{ id: uid() }];
+  if ((exercise.type === "cardio" || exercise.type === "timed") && sets.length) {
+    return sets.map((set) => ({
+      ...set,
+      durationMinutes: set.durationMinutes || set.duration || set.minutes || "",
+      heartRate: set.heartRate || set.heart || "",
+    }));
+  }
   if (sets.length === 1 && exercise.setCount && (sets[0].weight || sets[0].reps)) {
     return [{ ...sets[0], count: exercise.setCount }];
   }
@@ -2365,7 +2418,26 @@ function getLastSetValues(card) {
     weight: $(".set-weight", last)?.value || "",
     reps: $(".set-reps", last)?.value || "",
     count: $(".set-count", last)?.value || 1,
+    durationMinutes: $(".set-duration", last)?.value || "",
+    heartRate: $(".set-heart-rate", last)?.value || "",
   };
+}
+
+function updateExerciseCardType(card) {
+  card.classList.toggle("cardio-exercise", $(".exercise-type", card)?.value === "cardio");
+}
+
+function rebuildExerciseSetRows(card) {
+  const rows = $$(".exercise-set-row", card).map((row) => ({
+    id: row.dataset.setId || uid(),
+    weight: $(".set-weight", row)?.value || "",
+    reps: $(".set-reps", row)?.value || "",
+    count: $(".set-count", row)?.value || 1,
+    durationMinutes: $(".set-duration", row)?.value || "",
+    heartRate: $(".set-heart-rate", row)?.value || "",
+  }));
+  $(".exercise-sets", card).innerHTML = "";
+  (rows.length ? rows : [{ id: uid() }]).forEach((set, index) => addSetEditor(card, set, index));
 }
 
 function refreshSetNumbers(card) {
@@ -2424,7 +2496,7 @@ function setupWorkoutForm() {
       return;
     }
     if (event.target.closest(".add-set")) addSetEditor(event.target.closest(".exercise-card"));
-    if (event.target.matches(".set-weight, .set-reps, .set-count")) {
+    if (event.target.matches(".set-weight, .set-reps, .set-count, .set-duration, .set-heart-rate")) {
       setTimeout(() => event.target.select(), 0);
     }
     if (event.target.closest(".remove-set")) {
@@ -2435,7 +2507,7 @@ function setupWorkoutForm() {
     if (event.target.closest(".remove-exercise")) event.target.closest(".exercise-card").remove();
   });
   $("#exerciseEditor").addEventListener("focusin", (event) => {
-    if (event.target.matches(".set-weight, .set-reps, .set-count")) {
+    if (event.target.matches(".set-weight, .set-reps, .set-count, .set-duration, .set-heart-rate")) {
       event.target.select();
       return;
     }
@@ -2453,6 +2525,11 @@ function setupWorkoutForm() {
     if (event.target.classList.contains("exercise-name")) {
       applyExerciseSuggestion(event.target);
     }
+    if (event.target.classList.contains("exercise-type")) {
+      const card = event.target.closest(".exercise-card");
+      updateExerciseCardType(card);
+      rebuildExerciseSetRows(card);
+    }
   });
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".exercise-name-field")) hideAllExerciseSuggestions();
@@ -2469,7 +2546,7 @@ async function saveWorkout(event) {
   const exercises = getWorkoutFormExercises();
 
   if (!exercises.length) {
-    await showMessage("至少添加一个动作，并填写重量、次数、组数或备注");
+    await showMessage("至少添加一个动作，并填写重量、次数、组数、时间、心率或备注");
     return;
   }
 
@@ -3075,7 +3152,7 @@ async function init() {
       window.location.reload();
     });
     navigator.serviceWorker
-      .register("service-worker.js?v=87", { updateViaCache: "none" })
+      .register("service-worker.js?v=88", { updateViaCache: "none" })
       .then((registration) => registration.update())
       .catch((error) => console.warn("Service worker registration failed", error));
   }
