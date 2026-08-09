@@ -67,6 +67,7 @@ Use these environment variables in the hosting dashboard:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `FITNESS_USER_ID`
 - `FITNESS_READ_TOKEN`
+- `ALLOWED_ORIGINS` optional, comma-separated; leave empty for server-to-server MCP
 
 After deployment, ChatGPT should connect to:
 
@@ -85,5 +86,9 @@ Authorization: Bearer YOUR_FITNESS_READ_TOKEN
 - Do not put `.env` in GitHub.
 - Do not give ChatGPT your Supabase service role key.
 - Give ChatGPT only `FITNESS_READ_TOKEN`.
+- `/mcp` requires `Authorization: Bearer ...`; `/health` is public and returns no private data.
+- The server does not expose raw SQL or generic database query tools.
+- The server does not accept `user_id` from callers; it always uses `FITNESS_USER_ID`.
+- CORS is disabled by default. Set `ALLOWED_ORIGINS` only if a browser-based client needs it.
 - Photo tools return short-lived Supabase signed URLs.
 - Rotate `FITNESS_READ_TOKEN` if you think it leaked.

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import crypto from "node:crypto";
 import cors from "cors";
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
@@ -11,6 +12,7 @@ const {
   SUPABASE_SERVICE_ROLE_KEY,
   FITNESS_USER_ID,
   FITNESS_READ_TOKEN,
+  ALLOWED_ORIGINS = "",
   PORT = "8787",
 } = process.env;
 
@@ -34,13 +36,36 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 });
 
 const app = express();
-app.use(cors());
+const allowedOrigins = ALLOWED_ORIGINS
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (allowedOrigins.length) {
+  app.use(cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+      else callback(new Error("Origin not allowed"));
+    },
+    allowedHeaders: ["authorization", "content-type"],
+    methods: ["POST", "GET", "DELETE", "OPTIONS"],
+  }));
+}
 app.use(express.json({ limit: "2mb" }));
+app.use((_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  next();
+});
 
 function isAuthorized(req) {
   const authorization = req.get("authorization") || "";
-  const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : req.get("x-fitness-token");
-  return token && token === FITNESS_READ_TOKEN;
+  const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  if (!token) return false;
+  const tokenBuffer = Buffer.from(token);
+  const expectedBuffer = Buffer.from(FITNESS_READ_TOKEN);
+  return tokenBuffer.length === expectedBuffer.length
+    && crypto.timingSafeEqual(tokenBuffer, expectedBuffer);
 }
 
 function requireAuth(req, res, next) {
