@@ -59,6 +59,8 @@ This is a small Node server, not a static site. Deploy it somewhere that can run
 
 Do not deploy this MCP server to GitHub Pages. GitHub Pages can only host static files.
 
+This repo includes a root `render.yaml` Blueprint. On Render, create a new Blueprint from the GitHub repo and Render will use `fitness-mcp` as the service root directory.
+
 Use these environment variables in the hosting dashboard:
 
 - `SUPABASE_URL`

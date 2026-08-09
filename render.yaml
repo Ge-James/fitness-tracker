@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: fitness-tracker-mcp
+    runtime: node
+    plan: free
+    rootDir: fitness-mcp
+    buildCommand: pnpm install --frozen-lockfile
+    startCommand: pnpm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: FITNESS_USER_ID
+        sync: false
+      - key: FITNESS_READ_TOKEN
+        sync: false
