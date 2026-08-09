@@ -160,6 +160,7 @@ const TEXT_EN = {
   "当天照片": "Photos that day",
   "数据备份": "Data backup",
   "导出备份": "Export backup",
+  "导出 ChatGPT 分析包": "Export ChatGPT analysis pack",
   "导入备份": "Import backup",
   "上传本地数据到云端": "Upload local data",
   "从云端刷新": "Refresh from cloud",
@@ -241,6 +242,7 @@ const TEXT_EN = {
   "例如 13:00-17:00": "e.g. 13:00-17:00",
   "比如下午什么时候开始难受、怎么缓解、是否影响训练或工作": "When symptoms started, what helped, impact on training/work",
   "搜索训练、动作、备注": "Search workouts, exercises, notes",
+  "ChatGPT 分析包已下载": "ChatGPT analysis pack downloaded",
 };
 
 const TEXT_ZH = Object.fromEntries(Object.entries(TEXT_EN).map(([zh, en]) => [en, zh]));
@@ -503,6 +505,10 @@ function today() {
 
 function compareRecordsDesc(a, b) {
   return `${b.date || ""} ${b.updatedAt || b.createdAt || ""}`.localeCompare(`${a.date || ""} ${a.updatedAt || a.createdAt || ""}`);
+}
+
+function compareRecordsAsc(a, b) {
+  return `${a.date || ""} ${a.updatedAt || a.createdAt || ""}`.localeCompare(`${b.date || ""} ${b.updatedAt || b.createdAt || ""}`);
 }
 
 function formatDate(value) {
@@ -3063,6 +3069,124 @@ async function uploadLocalDataToCloud() {
   }
 }
 
+function downloadJsonFile(payload, filename) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function compactWorkoutForAnalysis(workout) {
+  return {
+    id: workout.id,
+    date: workout.date,
+    title: workout.title,
+    durationMinutes: workout.durationMinutes ?? null,
+    intensity: workout.intensity ?? null,
+    notes: workout.notes || "",
+    createdAt: workout.createdAt || "",
+    updatedAt: workout.updatedAt || "",
+    exercises: (workout.exercises || []).map((exercise) => ({
+      name: exercise.name || "",
+      type: exercise.type || "strength",
+      notes: exercise.notes || "",
+      sets: (exercise.sets || []).map((set) => ({
+        weight: set.weight ?? null,
+        reps: set.reps ?? null,
+        durationMinutes: set.durationMinutes ?? null,
+        heartRate: set.heartRate ?? null,
+      })),
+    })),
+  };
+}
+
+function compactTemplateForAnalysis(template) {
+  return {
+    id: template.id,
+    title: template.title || "",
+    notes: template.notes || "",
+    exercises: (template.exercises || []).map((exercise) => ({
+      name: exercise.name || "",
+      type: exercise.type || "strength",
+      notes: exercise.notes || "",
+      setCount: (exercise.sets || []).length,
+    })),
+  };
+}
+
+function compactPhotoForAnalysis(photo) {
+  return {
+    id: photo.id,
+    date: photo.date,
+    capturedAt: photo.capturedAt || "",
+    angle: photo.angle || "other",
+    weight: photo.weight ?? null,
+    notes: photo.notes || "",
+    hasImage: Boolean(photo.imageData || photo.imagePath),
+  };
+}
+
+function buildChatGptAnalysisPack() {
+  const sortedMeasurements = [...state.measurements].sort(compareRecordsAsc);
+  const sortedWorkouts = [...state.workouts].sort(compareRecordsAsc);
+  const sortedSleep = [...state.sleepEntries].sort(compareRecordsAsc);
+  const sortedPhotos = [...state.photos].sort(compareRecordsAsc);
+  const latestMeasurement = [...state.measurements].sort(compareRecordsDesc)[0];
+  const latestSleep = getLatestStatusEntry();
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    privacyNote: "Photos include metadata only. No image data or storage paths are included.",
+    suggestedPrompt: "Please analyze my fitness, body measurement, sleep/status, and progress-photo metadata. Focus on simple, practical patterns and next actions. Do not treat this as medical advice.",
+    summary: {
+      workouts: state.workouts.length,
+      bodyMeasurements: state.measurements.length,
+      statusEntries: state.sleepEntries.length,
+      photos: state.photos.length,
+      latestWorkoutDate: state.workouts[0]?.date || null,
+      latestWeightKg: latestMeasurement?.weight ?? null,
+      latestWaistCm: latestMeasurement?.waist ?? null,
+      latestStatusDate: latestSleep?.date || null,
+    },
+    workouts: sortedWorkouts.map(compactWorkoutForAnalysis),
+    bodyMeasurements: sortedMeasurements.map((item) => ({
+      id: item.id,
+      date: item.date,
+      weightKg: item.weight ?? null,
+      waistCm: item.waist ?? null,
+      chestCm: item.chest ?? null,
+      hipsCm: item.hips ?? null,
+      thighCm: item.thigh ?? null,
+      armCm: item.arm ?? null,
+      bodyFatPercent: item.bodyFat ?? null,
+      notes: item.notes || "",
+      createdAt: item.createdAt || "",
+      updatedAt: item.updatedAt || "",
+    })),
+    statusEntries: sortedSleep.map((item) => ({
+      id: item.id,
+      date: item.date,
+      sleepScore: item.sleepScore ?? null,
+      wakeFeeling: item.wakeFeeling || "",
+      sleepIssues: item.sleepIssues || [],
+      afternoonScore: item.afternoonScore ?? null,
+      severity: item.severity || "",
+      impactWindow: item.impactWindow || "",
+      symptoms: item.symptoms || [],
+      factors: item.factors || [],
+      notes: item.notes || "",
+      createdAt: item.createdAt || "",
+      updatedAt: item.updatedAt || "",
+    })),
+    progressPhotos: sortedPhotos.map(compactPhotoForAnalysis),
+    workoutTemplates: [...state.templates]
+      .sort((a, b) => (a.title || "").localeCompare(b.title || ""))
+      .map(compactTemplateForAnalysis),
+  };
+}
+
 function setupBackup() {
   $("#exportButton").addEventListener("click", () => {
     const payload = {
@@ -3074,12 +3198,11 @@ function setupBackup() {
       photos: state.photos,
       sleepEntries: state.sleepEntries,
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `fitness-backup-${today()}.json`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    downloadJsonFile(payload, `fitness-backup-${today()}.json`);
+  });
+  $("#chatGptExportButton").addEventListener("click", async () => {
+    downloadJsonFile(buildChatGptAnalysisPack(), `fitness-chatgpt-pack-${today()}.json`);
+    await showMessage(t("ChatGPT 分析包已下载"));
   });
   $("#importButton").addEventListener("click", async () => {
     const file = $("#importFile").files[0];
