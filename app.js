@@ -3074,7 +3074,10 @@ function downloadJsonFile(payload, filename) {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
+  link.remove();
   URL.revokeObjectURL(link.href);
 }
 
@@ -3134,7 +3137,7 @@ function buildChatGptAnalysisPack() {
   const sortedSleep = [...state.sleepEntries].sort(compareRecordsAsc);
   const sortedPhotos = [...state.photos].sort(compareRecordsAsc);
   const latestMeasurement = [...state.measurements].sort(compareRecordsDesc)[0];
-  const latestSleep = getLatestStatusEntry();
+  const latestSleep = latestSleepForHome();
   return {
     version: 1,
     generatedAt: new Date().toISOString(),
