@@ -1181,7 +1181,7 @@ details label {
 
 .exercise-set-row {
   display: grid;
-  grid-template-columns: 28px repeat(3, minmax(0, 1fr)) 42px;
+  grid-template-columns: 28px repeat(4, minmax(0, 1fr)) 42px;
   gap: 8px;
   align-items: end;
 }
@@ -1482,7 +1482,7 @@ details label {
   }
 
   .exercise-set-row {
-    grid-template-columns: 24px minmax(68px, 1.15fr) minmax(56px, 0.9fr) minmax(52px, 0.8fr) 34px;
+    grid-template-columns: 22px minmax(58px, 1fr) minmax(46px, 0.78fr) minmax(44px, 0.72fr) minmax(42px, 0.72fr) 32px;
     gap: 6px;
     align-items: end;
   }
@@ -1498,7 +1498,7 @@ details label {
 
   .exercise-set-row input {
     min-height: 38px;
-    padding: 8px 7px;
+    padding: 8px 6px;
   }
 
   input,
